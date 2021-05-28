@@ -1,6 +1,6 @@
 
 KEY="mykey"
-CHAINID="ethermint-2"
+CHAINID="testnet-causewaybay-0"
 MONIKER="localtestnet"
 
 # remove existing daemon and client
@@ -9,7 +9,7 @@ rm -rf ~/.ethermintd*
 make install
 
 # if $KEY exists it should be deleted
-ethermintd keys add $KEY --keyring-backend test --algo "eth_secp256k1" --recover
+ethermintd keys add $KEY --keyring-backend test --algo "eth_secp256k1" 
 
 # Set moniker and chain-id for Ethermint (Moniker can be anything, chain-id must be an integer)
 ethermintd init $MONIKER --chain-id $CHAINID 
