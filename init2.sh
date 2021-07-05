@@ -1,5 +1,6 @@
 
 KEY="mykey"
+KEY2="mykey2"
 CHAINID="ethermint-2"
 MONIKER="localtestnet"
 
@@ -10,7 +11,9 @@ make install
 
 # if $KEY exists it should be deleted
 echo $MYMNEMONICS
-ethermintd keys add $KEY --keyring-backend test --algo "secp256k1" --recover
+ethermintd keys add $KEY --keyring-backend test --algo "secp256k1" --recover --index 0
+echo $MYMNEMONICS
+ethermintd keys add $KEY2 --keyring-backend test --algo "secp256k1" --recover --index 1
 
 # Set moniker and chain-id for Ethermint (Moniker can be anything, chain-id must be an integer)
 ethermintd init $MONIKER --chain-id $CHAINID 
