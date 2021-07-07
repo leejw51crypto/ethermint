@@ -24,6 +24,20 @@ async function getBlockNumber(): Promise<string> {
     const b = await provider.getBlockNumber();
     return b.toString()
 }
+
+async function sendTx(fromaddr: string, toaddr: string): Promise<string> {
+    const provider = new ethers.providers.JsonRpcProvider(g_server);
+    const signer = provider.getSigner()
+    const tx = await signer.sendTransaction({
+        from: fromaddr,
+        to: toaddr,
+        value: ethers.utils.parseEther("1.0")
+    });
+    console.log(`tx ${JSON.stringify(tx)}`)
+
+
+    return ""
+}
 async function test2() {
 
     const myaddress = await getAddress(0)
@@ -36,6 +50,7 @@ async function test2() {
     console.log(`${myaddress} balance ${balance}`)
     console.log(`${myaddress2} balance ${balance2}`)
 
+    await sendTx(myaddress, myaddress2)
     //const v1 = ethers.utils.parseEther("1.0")
     //console.log(`v =${v1}`)
 
