@@ -2,13 +2,45 @@
 import { ethers } from "ethers"
 
 
-async function test() {
-    const provider = new ethers.providers.JsonRpcProvider("http://localhost:8545");
-    const b = await provider.getBlockNumber();
-    console.log(`${b}`)
-    const balance = await provider.getBalance("0x59E9A2D1F17E1970BF3843F11CE0BB7419E48D43")
-    console.log("OK")
-    console.log(`balance ${balance}`)
+const g_server = "http://localhost:8545"
+
+async function getAddress(index: number): Promise<string> {
+    let path = `m/44'/60'/0'/0/${index}`;
+    const mymnemonics = process.env.MYMNEMONICS ?? ''
+
+    let walletMnemonic = ethers.Wallet.fromMnemonic(mymnemonics, path);
+
+    const myaddress = await walletMnemonic.getAddress()
+    return myaddress;
 }
 
-test();
+async function getBalance(myaddress: string): Promise<string> {
+    const provider = new ethers.providers.JsonRpcProvider(g_server);
+    const mybalance = await provider.getBalance(myaddress)
+    return mybalance.toString()
+}
+async function getBlockNumber(): Promise<string> {
+    const provider = new ethers.providers.JsonRpcProvider(g_server);
+    const b = await provider.getBlockNumber();
+    return b.toString()
+}
+async function test2() {
+
+    const myaddress = await getAddress(0)
+    const myaddress2 = await getAddress(1)
+
+    const b = await getBlockNumber();
+    console.log(`${b}`)
+    const balance = await getBalance(myaddress)
+    const balance2 = await getBalance(myaddress2)
+    console.log(`${myaddress} balance ${balance}`)
+    console.log(`${myaddress2} balance ${balance2}`)
+
+    //const v1 = ethers.utils.parseEther("1.0")
+    //console.log(`v =${v1}`)
+
+}
+
+
+
+test2();
