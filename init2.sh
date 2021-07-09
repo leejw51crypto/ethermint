@@ -3,6 +3,7 @@ KEY="mykey"
 KEY2="mykey2"
 CHAINID="ethermint-2"
 MONIKER="localtestnet"
+KEYRING=test
 
 # remove existing daemon and client
 rm -rf ~/.ethermintd*
@@ -11,9 +12,9 @@ make install
 
 # if $KEY exists it should be deleted
 echo $MYMNEMONICS
-ethermintd keys add $KEY --keyring-backend test --algo "eth_secp256k1" --recover --index 0
+ethermintd keys add $KEY --keyring-backend $KEYRING --algo "eth_secp256k1" --recover --index 0
 echo $MYMNEMONICS
-ethermintd keys add $KEY2 --keyring-backend test --algo "eth_secp256k1" --recover --index 1
+ethermintd keys add $KEY2 --keyring-backend $KEYRING --algo "eth_secp256k1" --recover --index 1
 
 # Set moniker and chain-id for Ethermint (Moniker can be anything, chain-id must be an integer)
 ethermintd init $MONIKER --chain-id $CHAINID 
@@ -59,10 +60,10 @@ if [[ $1 == "pending" ]]; then
 fi
 
 # Allocate genesis accounts (cosmos formatted addresses)
-ethermintd add-genesis-account $KEY 100000000000000000000000000aphoton --keyring-backend test
+ethermintd add-genesis-account $KEY 100000000000000000000000000aphoton --keyring-backend $KEYRING
 
 # Sign genesis transaction
-ethermintd gentx $KEY 1000000000000000000000aphoton --keyring-backend test --chain-id $CHAINID
+ethermintd gentx $KEY 1000000000000000000000aphoton --keyring-backend $KEYRING --chain-id $CHAINID
 
 # Collect genesis tx
 ethermintd collect-gentxs
@@ -75,4 +76,4 @@ if [[ $1 == "pending" ]]; then
 fi
 
 # Start the node (remove the --pruning=nothing flag if historical queries are not needed)
-ethermintd start --pruning=nothing --keyring-backend test --trace --log_level info
+ethermintd start --pruning=nothing --keyring-backend $KEYRING --trace --log_level info
