@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { ethers } from "ethers"
-
+import * as fs from 'fs'
 
 const g_server = "http://localhost:8545"
 
@@ -61,6 +61,12 @@ async function testHelloWord() {
     const balance = await getBalance(myaddress)
     console.log("Hello World")
     console.log(`${myaddress} balance ${balance}`)
+
+    const contractBinary = fs.readFileSync('hello_sol_Hello.bin')
+    console.log(`binary ${contractBinary}`)
+
+    const contractAbi = fs.readFileSync('hello_sol_Hello.abi')
+    console.log(`abi ${contractAbi}`)
 
 }
 
