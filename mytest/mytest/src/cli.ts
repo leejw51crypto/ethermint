@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { ethers } from "ethers"
+import { ethers, ContractFactory } from "ethers"
 import * as fs from 'fs'
 
 const g_server = "http://localhost:8545"
@@ -62,11 +62,23 @@ async function testHelloWord() {
     console.log("Hello World")
     console.log(`${myaddress} balance ${balance}`)
 
-    const contractBinary = fs.readFileSync('hello_sol_Hello.bin')
-    console.log(`binary ${contractBinary}`)
+    const contractByteCode = fs.readFileSync('hello_sol_Hello.bin')
+    console.log(`binary ${contractByteCode}`)
 
-    const contractAbi = fs.readFileSync('hello_sol_Hello.abi')
+    const contractAbi = JSON.parse(fs.readFileSync('hello_sol_Hello.abi', 'utf-8'))
     console.log(`abi ${contractAbi}`)
+
+    const provider = new ethers.providers.JsonRpcProvider(g_server);
+    const signer = provider.getSigner()
+    console.log(`address ${await signer.getAddress()}`)
+    const factory = new ContractFactory(contractAbi, contractByteCode, signer)
+
+    // If your contract requires constructor args, you can specify them here
+    const contract = await factory.deploy()
+
+    console.log(contract)
+    // console.log(contract.deployTransaction)
+
 
 }
 
