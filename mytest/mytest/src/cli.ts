@@ -56,6 +56,13 @@ async function test2() {
 
 }
 
+async function testHelloWord() {
+    const myaddress = await getAddress(0)
+    const balance = await getBalance(myaddress)
+    console.log("Hello World")
+    console.log(`${myaddress} balance ${balance}`)
+
+}
 
 
-test2();
+testHelloWord();
