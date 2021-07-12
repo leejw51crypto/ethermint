@@ -65,6 +65,7 @@ async function createContract(): Promise<string> {
     const signer = provider.getSigner()
     const factory = new ContractFactory(contractAbi, contractByteCode, signer)
     const contract = await factory.deploy()
+    console.log(`contract ${JSON.stringify(contract)}`)
     return contract.address
 
 }
@@ -83,9 +84,14 @@ async function processContract(contractAddress: string) {
 
     let wallet = await getWallet(0)
     let contractWithSigner = contractInstance.connect(wallet);
-    let tx = await contractWithSigner.store(ethers.BigNumber.from("0x15"))
-    //await tx.wait()
+    let tx = await contractWithSigner.store(ethers.BigNumber.from("0x15").add(currentValue),
+        {
+            gasPrice: 100,
+            gasLimit: 9000000
+        })
+    let tx2 = await tx.wait()
     console.log(tx)
+    console.log(tx2)
     currentValue = await contractInstance.retrieve();
     console.log(currentValue);
 
@@ -93,6 +99,7 @@ async function processContract(contractAddress: string) {
 
 async function run() {
     let contractAddress = await createContract()
+    //let contractAddress = '0xd6E3Ea8193EC49E92AFfa0A7051ED2Db93205bc2'
     console.log(`contract address ${contractAddress}`)
     processContract(contractAddress)
 }
