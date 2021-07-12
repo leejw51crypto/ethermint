@@ -24,7 +24,6 @@ contract Hello {
     }
     
     
-    
      function setMessage(string memory newMessage) public
      {
          message=newMessage;
