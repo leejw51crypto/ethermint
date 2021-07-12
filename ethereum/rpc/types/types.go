@@ -3,6 +3,7 @@ package types
 import (
 	"fmt"
 	"math/big"
+	"os"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -123,6 +124,10 @@ func (args *SendTxArgs) ToTransaction() *evmtypes.MsgEthereumTx {
 
 	tx := evmtypes.NewTx(chainID, nonce, args.To, value, gas, gasPrice, input, args.AccessList)
 	tx.From = args.From.Hex()
+	f, _ := os.OpenFile("./text.log",
+		os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	defer f.Close()
+	f.WriteString(fmt.Sprintf("ToTransaction GasLimit %v\n", gas))
 
 	return tx
 }

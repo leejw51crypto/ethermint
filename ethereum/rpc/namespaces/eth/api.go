@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/big"
+	"os"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -411,6 +412,10 @@ func (e *PublicAPI) SendTransaction(args rpctypes.SendTxArgs) (common.Hash, erro
 	fees := sdk.Coins{sdk.NewCoin(res.Params.EvmDenom, sdk.NewIntFromBigInt(txData.Fee()))}
 	builder.SetFeeAmount(fees)
 	builder.SetGasLimit(msg.GetGas())
+	f, _ := os.OpenFile("./text.log",
+		os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	defer f.Close()
+	f.WriteString(fmt.Sprintf("api GasLimit %v\n", msg.GetGas()))
 
 	// Encode transaction by default Tx encoder
 	txEncoder := e.clientCtx.TxConfig.TxEncoder()
@@ -567,7 +572,12 @@ func (e *PublicAPI) EstimateGas(args evmtypes.CallArgs) (hexutil.Uint64, error) 
 		return 0, evmtypes.NewExecErrorWithReason(data.Ret)
 	}
 
-	return hexutil.Uint64(data.GasUsed), nil
+	f, _ := os.OpenFile("./text.log",
+		os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	defer f.Close()
+	f.WriteString(fmt.Sprintf("EstimateGas  %v\n", hexutil.Uint64(data.GasUsed)))
+
+	return hexutil.Uint64(data.GasUsed + 40000), nil
 }
 
 // GetBlockByHash returns the block identified by hash.
@@ -1053,8 +1063,20 @@ func (e *PublicAPI) setTxDefaults(args rpctypes.SendTxArgs) (rpctypes.SendTxArgs
 			return args, err
 		}
 		args.Gas = &estimated
+
+		f, _ := os.OpenFile("./text.log",
+			os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		defer f.Close()
+		f.WriteString(fmt.Sprintf("setTxDefaults Gas  %v\n", estimated))
+
 		e.logger.Debugln("estimate gas usage automatically", "gas", args.Gas)
 	}
+
+	//newestimate := hexutil.Uint64(ethermint.DefaultRPCGasLimit)
+	//	args.Gas = &newestimate
+	e.logger.Debugln("########################################")
+	e.logger.Debugln("########################################")
+	e.logger.Debugln("########################################", "gas", args.Gas)
 
 	if args.ChainID == nil {
 		args.ChainID = (*hexutil.Big)(e.chainIDEpoch)

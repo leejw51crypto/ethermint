@@ -340,8 +340,8 @@ func New(t *testing.T, cfg Config) *Network {
 		fee := sdk.NewCoins(sdk.NewCoin(fmt.Sprintf("%stoken", nodeDirName), sdk.NewInt(0)))
 		txBuilder := cfg.TxConfig.NewTxBuilder()
 		require.NoError(t, txBuilder.SetMsgs(createValMsg))
-		txBuilder.SetFeeAmount(fee)    // Arbitrary fee
-		txBuilder.SetGasLimit(1000000) // Need at least 100386
+		txBuilder.SetFeeAmount(fee)      // Arbitrary fee
+		txBuilder.SetGasLimit(120000056) // Need at least 100386
 		txBuilder.SetMemo(memo)
 
 		txFactory := tx.Factory{}
