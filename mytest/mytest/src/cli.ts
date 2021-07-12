@@ -82,26 +82,26 @@ async function processContract(contractAddress: string) {
     let currentValue = await contractInstance.retrieve();
     console.log(currentValue);
 
-    let wallet = await getWallet(0)
-    let contractWithSigner = contractInstance.connect(wallet);
-    let tx = await contractWithSigner.store(ethers.BigNumber.from("0x15").add(currentValue),
-        {
-
-            // gasLimit: 41646
-        })
-    let tx2 = await tx.wait()
-    console.log(tx)
-    console.log(tx2)
-    currentValue = await contractInstance.retrieve();
-    console.log(currentValue);
-
+    /*  let wallet = await getWallet(0)
+      let contractWithSigner = contractInstance.connect(wallet);
+      let tx = await contractWithSigner.store(ethers.BigNumber.from("0x15").add(currentValue),
+          {
+  
+              // gasLimit: 41646
+          })
+      let tx2 = await tx.wait()
+      console.log(tx)
+      console.log(tx2)
+      currentValue = await contractInstance.retrieve();
+      console.log(currentValue);
+  */
 }
 
 async function run() {
-    let contractAddress = await createContract()
+    //  let contractAddress = await createContract()
     //let contractAddress = '0xd6E3Ea8193EC49E92AFfa0A7051ED2Db93205bc2'
-    console.log(`contract address ${contractAddress}`)
-    processContract(contractAddress)
+    //console.log(`contract address ${contractAddress}`)
+    // processContract(contractAddress)
 }
 
 run()
