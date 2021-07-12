@@ -4,12 +4,17 @@ import * as fs from 'fs'
 
 const g_server = "http://localhost:8545"
 
-async function getAddress(index: number): Promise<string> {
+
+async function getWallet(index: number): Promise<ethers.Wallet> {
     let path = `m/44'/60'/0'/0/${index}`;
     const mymnemonics = process.env.MYMNEMONICS ?? ''
-
+    const provider = new ethers.providers.JsonRpcProvider(g_server);
     let walletMnemonic = ethers.Wallet.fromMnemonic(mymnemonics, path);
-
+    let w = walletMnemonic.connect(provider)
+    return w
+}
+async function getAddress(index: number): Promise<string> {
+    let walletMnemonic = await getWallet(index)
     const myaddress = await walletMnemonic.getAddress()
     return myaddress;
 }
@@ -56,7 +61,7 @@ async function test2() {
 
 }
 
-async function testHelloWord() {
+async function createContract(): Promise<string> {
     const myaddress = await getAddress(0)
     const balance = await getBalance(myaddress)
     console.log("Hello World")
@@ -78,9 +83,43 @@ async function testHelloWord() {
 
     console.log(contract)
     // console.log(contract.deployTransaction)
-
+    return contract.address
 
 }
 
 
-testHelloWord();
+async function processContract(contractAddress: string) {
+    const contractByteCode = fs.readFileSync('hello_sol_Hello.bin', 'utf-8')
+
+    const contractAbi = JSON.parse(fs.readFileSync('hello_sol_Hello.abi', 'utf-8'))
+    const provider = new ethers.providers.JsonRpcProvider(g_server);
+    console.log(`contract address ${contractAddress}`)
+    const contractInstance = new ethers.Contract(contractAddress, contractAbi, provider)
+
+    let currentValue = await contractInstance.retrieve();
+    console.log(currentValue);
+
+    let wallet = await getWallet(0)
+    let contractWithSigner = contractInstance.connect(wallet);
+    let tx = await contractWithSigner.store(ethers.BigNumber.from("42"))
+    console.log(tx)
+    //await provider.sendTransaction(tx)
+    await tx.wait()
+
+
+
+    currentValue = await contractInstance.retrieve();
+    console.log(currentValue);
+
+}
+
+
+async function run() {
+
+    //processContract('0x9f142Ff6E114193658704d99Aec3b1B697559eFc');
+    // let contractAddress = await createContract()
+    //console.log(`contract address ${contractAddress}`)
+    processContract("0x004521B293A551c7e0905b2dD69b24975b4C39A4")
+}
+
+run()

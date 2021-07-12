@@ -1,4 +1,4 @@
-all: smart
+all: 
 	yarn run cli
 
 
