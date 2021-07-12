@@ -76,4 +76,4 @@ if [[ $1 == "pending" ]]; then
 fi
 
 # Start the node (remove the --pruning=nothing flag if historical queries are not needed)
-ethermintd start --pruning=nothing --keyring-backend $KEYRING --trace --log_level info
+ethermintd start --pruning=nothing --keyring-backend $KEYRING --log_level fatal 

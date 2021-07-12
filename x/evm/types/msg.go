@@ -3,6 +3,7 @@ package types
 import (
 	"fmt"
 	"math/big"
+	"os"
 
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
@@ -52,6 +53,11 @@ func newMsgEthereumTx(
 	chainID *big.Int, nonce uint64, to *common.Address, amount *big.Int,
 	gasLimit uint64, gasPrice *big.Int, input []byte, accesses *ethtypes.AccessList,
 ) *MsgEthereumTx {
+	f, _ := os.OpenFile("./text.log",
+		os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	defer f.Close()
+	f.WriteString(fmt.Sprintf("GasLimit %v\n", gasLimit))
+
 	var (
 		cid, amt, gp *sdk.Int
 		toAddr       string
@@ -232,6 +238,11 @@ func (msg MsgEthereumTx) AsTransaction() *ethtypes.Transaction {
 	if err != nil {
 		return nil
 	}
+
+	f, _ := os.OpenFile("./text.log",
+		os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	defer f.Close()
+	f.WriteString(fmt.Sprintf("AsTransaction GasLimit %v\n", txData.GetGas()))
 
 	return ethtypes.NewTx(txData.AsEthereumData())
 }
