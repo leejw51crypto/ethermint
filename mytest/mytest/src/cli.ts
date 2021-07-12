@@ -101,7 +101,7 @@ async function processContract(contractAddress: string) {
 
     let wallet = await getWallet(0)
     let contractWithSigner = contractInstance.connect(wallet);
-    let tx = await contractWithSigner.store(ethers.BigNumber.from("123"))
+    let tx = await contractWithSigner.store(ethers.BigNumber.from("0x15"))
     console.log(tx)
 
 
