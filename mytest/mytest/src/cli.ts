@@ -101,11 +101,8 @@ async function processContract(contractAddress: string) {
 
     let wallet = await getWallet(0)
     let contractWithSigner = contractInstance.connect(wallet);
-    let tx = await contractWithSigner.store(ethers.BigNumber.from("42"))
+    let tx = await contractWithSigner.store(ethers.BigNumber.from("123"))
     console.log(tx)
-    //await provider.sendTransaction(tx)
-    await tx.wait()
-
 
 
     currentValue = await contractInstance.retrieve();
@@ -116,10 +113,9 @@ async function processContract(contractAddress: string) {
 
 async function run() {
 
-    //processContract('0x9f142Ff6E114193658704d99Aec3b1B697559eFc');
-    // let contractAddress = await createContract()
-    //console.log(`contract address ${contractAddress}`)
-    processContract("0x004521B293A551c7e0905b2dD69b24975b4C39A4")
+    let contractAddress = await createContract()
+    console.log(`contract address ${contractAddress}`)
+    processContract(contractAddress)
 }
 
 run()
