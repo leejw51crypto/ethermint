@@ -62,7 +62,7 @@ async function testHelloWord() {
     console.log("Hello World")
     console.log(`${myaddress} balance ${balance}`)
 
-    const contractByteCode = fs.readFileSync('hello_sol_Hello.bin')
+    const contractByteCode = fs.readFileSync('hello_sol_Hello.bin', 'utf-8')
     console.log(`binary ${contractByteCode}`)
 
     const contractAbi = JSON.parse(fs.readFileSync('hello_sol_Hello.abi', 'utf-8'))
