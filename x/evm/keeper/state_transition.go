@@ -1,7 +1,6 @@
 package keeper
 
 import (
-	"errors"
 	"math/big"
 	"os"
 	"time"
@@ -136,18 +135,20 @@ func (k *Keeper) ApplyTransaction(tx *ethtypes.Transaction) (*types.MsgEthereumT
 
 	k.SetTxHashTransient(tx.Hash())
 	k.IncreaseTxIndexTransient()
-	res, err := k.ApplyMessage(evm, msg, ethCfg)
+	res, err := k.ApplyMessage(evm, msg, ethCfg, false)
 	if err != nil {
 		return nil, stacktrace.Propagate(err, "failed to apply ethereum core message")
 	}
 
-	txHash := tx.Hash()
-	res.Hash = txHash.Hex()
+	rsp := types.TxResponseFromResult(res)
 
-	// Set the bloom filter and commit only if transaction is NOT reverted
-	if !res.Reverted {
+	txHash := tx.Hash()
+	rsp.Hash = txHash.Hex()
+
+	// Set the bloom filter and commit only if transaction is NOT failed
+	if !res.Failed() {
 		logs := k.GetTxLogs(txHash)
-		res.Logs = types.NewLogsFromEth(logs)
+		rsp.Logs = types.NewLogsFromEth(logs)
 		// update block bloom filter
 		bloom := k.GetBlockBloomTransient()
 		bloom.Or(bloom, big.NewInt(0).SetBytes(ethtypes.LogsBloom(logs)))
@@ -156,17 +157,11 @@ func (k *Keeper) ApplyTransaction(tx *ethtypes.Transaction) (*types.MsgEthereumT
 		commit()
 	}
 
-	// refund gas prior to handling the vm error in order to set the updated gas meter
-	k.ctx = originalCtx
-	leftoverGas := msg.Gas() - res.GasUsed
-	leftoverGas, err = k.RefundGas(msg, leftoverGas)
-	if err != nil {
-		return nil, stacktrace.Propagate(err, "failed to refund gas leftover gas to sender %s", msg.From())
-	}
 	// update the gas used after refund
-	res.GasUsed = msg.Gas() - leftoverGas
-	k.resetGasMeterAndConsumeGas(res.GasUsed)
-	return res, nil
+	k.ctx = originalCtx
+	k.resetGasMeterAndConsumeGas(res.UsedGas)
+
+	return rsp, nil
 }
 
 // Gas consumption notes (write doc from this)
@@ -209,7 +204,9 @@ func (k *Keeper) ApplyTransaction(tx *ethtypes.Transaction) (*types.MsgEthereumT
 // The preprocessing steps performed by the AnteHandler are:
 //
 // 1. set up the initial access list (iff fork > Berlin)
-func (k *Keeper) ApplyMessage(evm *vm.EVM, msg core.Message, cfg *params.ChainConfig) (*types.MsgEthereumTxResponse, error) {
+
+// NOTE: eth_call/eth_estimateGas don't do ante handler, so shouldn't do gas refund either.
+func (k *Keeper) ApplyMessage(evm *vm.EVM, msg core.Message, cfg *params.ChainConfig, simulate bool) (*core.ExecutionResult, error) {
 	var (
 		ret   []byte // return bytes from evm execution
 		vmErr error  // vm errors do not effect consensus and are therefore not assigned to err
@@ -223,7 +220,10 @@ func (k *Keeper) ApplyMessage(evm *vm.EVM, msg core.Message, cfg *params.ChainCo
 		// should have already been checked on Ante Handler
 		return nil, stacktrace.Propagate(err, "intrinsic gas failed")
 	}
-	// should be > 0 as it is checked on Ante Handler
+	// Should check again even if it is checked on Ante Handler, because eth_call don't go through Ante Handler.
+	if msg.Gas() < intrinsicGas {
+		return nil, core.ErrIntrinsicGas
+	}
 	leftoverGas := msg.Gas() - intrinsicGas
 
 	if contractCreation {
@@ -232,20 +232,22 @@ func (k *Keeper) ApplyMessage(evm *vm.EVM, msg core.Message, cfg *params.ChainCo
 		ret, leftoverGas, vmErr = evm.Call(sender, *msg.To(), msg.Data(), leftoverGas, msg.Value())
 	}
 
-	var reverted bool
-	if vmErr != nil {
-		if !errors.Is(vmErr, vm.ErrExecutionReverted) {
-			// wrap the VM error
-			return nil, stacktrace.Propagate(sdkerrors.Wrap(types.ErrVMExecution, vmErr.Error()), "vm execution failed")
+	if simulate {
+		// eth_call/eth_estimateGas don't call ante handler to deduct gas fee, so don't do actual refund.
+		leftoverGas += k.GasToRefund(msg.Gas() - leftoverGas)
+	} else {
+		// refund gas prior to handling the vm error in order to set the updated gas meter
+		leftoverGas, err = k.RefundGas(msg, leftoverGas)
+		if err != nil {
+			return nil, stacktrace.Propagate(err, "failed to refund gas leftover gas to sender %s", msg.From())
 		}
-		reverted = true
 	}
 
 	gasUsed := msg.Gas() - leftoverGas
-	return &types.MsgEthereumTxResponse{
-		Ret:      ret,
-		Reverted: reverted,
-		GasUsed:  gasUsed,
+	return &core.ExecutionResult{
+		UsedGas:    gasUsed,
+		Err:        vmErr,
+		ReturnData: ret,
 	}, nil
 }
 

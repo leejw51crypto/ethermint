@@ -395,14 +395,10 @@ func (k Keeper) EthCall(c context.Context, req *types.EthCallRequest) (*types.Ms
 	}
 	ethCfg := cfg.EthereumConfig(k.eip155ChainID)
 	evm := k.NewEVM(msg, ethCfg)
-	res, err := k.ApplyMessage(evm, msg, ethCfg)
+	res, err := k.ApplyMessage(evm, msg, ethCfg, true)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	// ApplyMessage don't handle gas refund, let's do it here
-	refund := k.GasToRefund(res.GasUsed)
-	res.GasUsed -= refund
-
-	return res, nil
+	return types.TxResponseFromResult(res), nil
 }

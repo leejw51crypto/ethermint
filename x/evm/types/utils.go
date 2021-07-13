@@ -10,6 +10,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 
+	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
@@ -68,4 +69,17 @@ func UnwrapEthereumMsg(tx *sdk.Tx) (*MsgEthereumTx, error) {
 	}
 
 	return msg, nil
+}
+
+// TxResponseFromResult convert ExecutionResult to MsgEthereumTxResponse
+func TxResponseFromResult(res *core.ExecutionResult) (rsp *MsgEthereumTxResponse) {
+	var vmError string
+	if res.Err != nil {
+		vmError = res.Err.Error()
+	}
+	return &MsgEthereumTxResponse{
+		Ret:     res.ReturnData,
+		GasUsed: res.UsedGas,
+		VmError: vmError,
+	}
 }

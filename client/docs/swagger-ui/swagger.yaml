@@ -1792,10 +1792,9 @@ paths:
                 title: >-
                   returned data from evm function (result or data supplied with
                   revert opcode)
-              reverted:
-                type: boolean
-                format: boolean
-                title: reverted flag is set to true when the call has been reverted
+              vm_error:
+                type: string
+                title: vm error is the error returned by vm execution
               gas_used:
                 type: string
                 format: uint64
@@ -13211,10 +13210,9 @@ definitions:
         title: >-
           returned data from evm function (result or data supplied with revert
           opcode)
-      reverted:
-        type: boolean
-        format: boolean
-        title: reverted flag is set to true when the call has been reverted
+      vm_error:
+        type: string
+        title: vm error is the error returned by vm execution
       gas_used:
         type: string
         format: uint64
