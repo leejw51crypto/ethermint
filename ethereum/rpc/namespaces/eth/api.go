@@ -28,6 +28,7 @@ import (
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/crypto"
+	ethparams "github.com/ethereum/go-ethereum/params"
 
 	"github.com/tharsis/ethermint/crypto/hd"
 	"github.com/tharsis/ethermint/ethereum/rpc/backend"
@@ -538,10 +539,20 @@ func (e *PublicAPI) doCall(
 	if err != nil {
 		return nil, err
 	}
-	req := evmtypes.EthCallRequest{Args: bz}
+	req := evmtypes.EthCallRequest{Args: bz, GasCap: ethermint.DefaultRPCGasLimit}
+
+	// From ContextWithHeight: if the provided height is 0,
+	// it will return an empty context and the gRPC query will use
+	// the latest block height for querying.
 	res, err := e.queryClient.EthCall(rpctypes.ContextWithHeight(blockNr.Int64()), &req)
 	if err != nil {
 		return nil, err
+	}
+	if len(res.VmError) > 0 {
+		if res.VmError == vm.ErrExecutionReverted.Error() {
+			return nil, evmtypes.NewExecErrorWithReason(res.Ret)
+		}
+		return nil, errors.New(res.VmError)
 	}
 
 	if len(res.VmError) > 0 {
@@ -555,18 +566,100 @@ func (e *PublicAPI) doCall(
 }
 
 // EstimateGas returns an estimate of gas usage for the given smart contract call.
-func (e *PublicAPI) EstimateGas(args evmtypes.CallArgs) (hexutil.Uint64, error) {
+func (e *PublicAPI) EstimateGas(args evmtypes.CallArgs, blockNrOptional *rpctypes.BlockNumber) (hexutil.Uint64, error) {
 	e.logger.Debug("eth_estimateGas")
 
-	// From ContextWithHeight: if the provided height is 0,
-	// it will return an empty context and the gRPC query will use
-	// the latest block height for querying.
-	data, err := e.doCall(args, 0)
-	if err != nil {
-		return 0, err
+	blockNr := rpctypes.EthPendingBlockNumber
+	if blockNrOptional != nil {
+		blockNr = *blockNrOptional
 	}
 
-	return hexutil.Uint64(data.GasUsed), nil
+	// Binary search the gas requirement, as it may be higher than the amount used
+	var (
+		lo     uint64 = ethparams.TxGas - 1
+		hi     uint64
+		cap    uint64
+		gasCap uint64 = uint64(ethermint.DefaultRPCGasLimit)
+	)
+
+	// Determine the highest gas limit can be used during the estimation.
+	if args.Gas != nil && uint64(*args.Gas) >= ethparams.TxGas {
+		hi = uint64(*args.Gas)
+	} else {
+		// Query block gas limit
+		params, err := e.clientCtx.Client.ConsensusParams(e.ctx, blockNr.TmHeight())
+		if err != nil {
+			return 0, err
+		}
+		if params.ConsensusParams.Block.MaxGas > 0 {
+			hi = uint64(params.ConsensusParams.Block.MaxGas)
+		} else {
+			hi = gasCap
+		}
+	}
+
+	// TODO Recap the highest gas limit with account's available balance.
+
+	// Recap the highest gas allowance with specified gascap.
+	if gasCap != 0 && hi > gasCap {
+		hi = gasCap
+	}
+	cap = hi
+
+	// Create a helper to check if a gas allowance results in an executable transaction
+	executable := func(gas uint64) (bool, *evmtypes.MsgEthereumTxResponse, error) {
+		args.Gas = (*hexutil.Uint64)(&gas)
+		bz, err := json.Marshal(&args)
+		if err != nil {
+			return true, nil, err
+		}
+		req := evmtypes.EthCallRequest{Args: bz, GasCap: gasCap}
+		rsp, err := e.queryClient.EthCall(rpctypes.ContextWithHeight(blockNr.Int64()), &req)
+		if err != nil {
+			// FIXME only ErrIntrinsicGas need to retry
+			// if errors.Is(err, core.ErrIntrinsicGas) {
+			//     return true, nil, status.Error(codes.Internal, err.Error()) // Bail out
+			// }
+			return true, nil, nil // Special case, raise gas limit
+		}
+		return len(rsp.VmError) > 0, rsp, nil
+	}
+
+	// Execute the binary search and hone in on an executable gas limit
+	for lo+1 < hi {
+		mid := (hi + lo) / 2
+		failed, _, err := executable(mid)
+
+		// If the error is not nil(consensus error), it means the provided message
+		// call or transaction will never be accepted no matter how much gas it is
+		// assigned. Return the error directly, don't struggle any more.
+		if err != nil {
+			return 0, err
+		}
+		if failed {
+			lo = mid
+		} else {
+			hi = mid
+		}
+	}
+	// Reject the transaction as invalid if it still fails at the highest allowance
+	if hi == cap {
+		failed, result, err := executable(hi)
+		if err != nil {
+			return 0, err
+		}
+		if failed {
+			if result != nil && result.VmError != vm.ErrOutOfGas.Error() {
+				if result.VmError == vm.ErrExecutionReverted.Error() {
+					return 0, evmtypes.NewExecErrorWithReason(result.Ret)
+				}
+				return 0, errors.New(result.VmError)
+			}
+			// Otherwise, the specified gas cap is too low
+			return 0, fmt.Errorf("gas required exceeds allowance (%d)", cap)
+		}
+	}
+	return hexutil.Uint64(hi), nil
 }
 
 // GetBlockByHash returns the block identified by hash.
@@ -1005,7 +1098,8 @@ func (e *PublicAPI) setTxDefaults(args rpctypes.SendTxArgs) (rpctypes.SendTxArgs
 			Data:       input,
 			AccessList: args.AccessList,
 		}
-		estimated, err := e.EstimateGas(callArgs)
+		blockNr := rpctypes.NewBlockNumber(big.NewInt(0))
+		estimated, err := e.EstimateGas(callArgs, &blockNr)
 		if err != nil {
 			return args, err
 		}
