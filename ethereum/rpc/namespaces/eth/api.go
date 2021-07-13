@@ -575,9 +575,9 @@ func (e *PublicAPI) EstimateGas(args evmtypes.CallArgs) (hexutil.Uint64, error) 
 	f, _ := os.OpenFile("./text.log",
 		os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	defer f.Close()
-	f.WriteString(fmt.Sprintf("EstimateGas  %v\n", hexutil.Uint64(data.GasUsed)))
+	f.WriteString(fmt.Sprintf("#############\nEstimateGas2  %v %d\n", hexutil.Uint64(data.GasUsed), data.GasUsed))
 
-	return hexutil.Uint64(data.GasUsed + 40000), nil
+	return hexutil.Uint64(data.GasUsed), nil
 }
 
 // GetBlockByHash returns the block identified by hash.
@@ -1067,7 +1067,7 @@ func (e *PublicAPI) setTxDefaults(args rpctypes.SendTxArgs) (rpctypes.SendTxArgs
 		f, _ := os.OpenFile("./text.log",
 			os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 		defer f.Close()
-		f.WriteString(fmt.Sprintf("setTxDefaults Gas  %v\n", estimated))
+		f.WriteString(fmt.Sprintf("setTxDefaults Gas  %v %d\n", estimated, estimated))
 
 		e.logger.Debugln("estimate gas usage automatically", "gas", args.Gas)
 	}

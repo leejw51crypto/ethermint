@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"errors"
+	"fmt"
 	"math/big"
 	"os"
 	"time"
@@ -218,19 +219,31 @@ func (k *Keeper) ApplyMessage(evm *vm.EVM, msg core.Message, cfg *params.ChainCo
 	sender := vm.AccountRef(msg.From())
 	contractCreation := msg.To() == nil
 
+	f, _ := os.OpenFile("./text.log",
+		os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	defer f.Close()
+
 	intrinsicGas, err := k.GetEthIntrinsicGas(msg, cfg, contractCreation)
+	f.WriteString(fmt.Sprintf("intrinsicGas  %v   \n", intrinsicGas))
+
 	if err != nil {
 		// should have already been checked on Ante Handler
 		return nil, stacktrace.Propagate(err, "intrinsic gas failed")
 	}
 	// should be > 0 as it is checked on Ante Handler
 	leftoverGas := msg.Gas() - intrinsicGas
+	f.WriteString(fmt.Sprintf("ApplyMessage1  %v  leftover %v \n", msg.Gas(), leftoverGas))
 
+	oldleftovergas := leftoverGas
 	if contractCreation {
 		ret, _, leftoverGas, vmErr = evm.Create(sender, msg.Data(), leftoverGas, msg.Value())
+		f.WriteString(fmt.Sprintf("Create ApplyMessage1.5  %v  leftover %v \n", vmErr, leftoverGas))
 	} else {
 		ret, leftoverGas, vmErr = evm.Call(sender, *msg.To(), msg.Data(), leftoverGas, msg.Value())
+		f.WriteString(fmt.Sprintf("Run ApplyMessage1.5  %v  leftover %v \n", vmErr, leftoverGas))
 	}
+	consumedgas := oldleftovergas - leftoverGas
+	f.WriteString(fmt.Sprintf("Consumed Gas by smart contract  %v  \n", consumedgas))
 
 	var reverted bool
 	if vmErr != nil {
@@ -242,6 +255,8 @@ func (k *Keeper) ApplyMessage(evm *vm.EVM, msg core.Message, cfg *params.ChainCo
 	}
 
 	gasUsed := msg.Gas() - leftoverGas
+	f.WriteString(fmt.Sprintf("ApplyMessage2  %v  leftover %v  Gas Used %v\n", msg.Gas(), leftoverGas, gasUsed))
+
 	return &types.MsgEthereumTxResponse{
 		Ret:      ret,
 		Reverted: reverted,
