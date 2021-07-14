@@ -66,6 +66,10 @@ async function createContract(): Promise<string> {
     const factory = new ContractFactory(contractAbi, contractByteCode, signer)
     const contract = await factory.deploy()
     console.log(`contract ${JSON.stringify(contract)}`)
+    console.log('mining')
+    await contract.deployed()
+    console.log('mined...........')
+
     return contract.address
 
 }
@@ -82,34 +86,17 @@ async function processContract(contractAddress: string) {
     let currentValue = await contractInstance.retrieve();
     console.log(currentValue);
 
-<<<<<<< HEAD
-    /*  let wallet = await getWallet(0)
-      let contractWithSigner = contractInstance.connect(wallet);
-      let tx = await contractWithSigner.store(ethers.BigNumber.from("0x15").add(currentValue),
-          {
-  
-              // gasLimit: 41646
-          })
-      let tx2 = await tx.wait()
-      console.log(tx)
-      console.log(tx2)
-      currentValue = await contractInstance.retrieve();
-      console.log(currentValue);
-  */
-}
-
-async function run() {
-    //  let contractAddress = await createContract()
-    //let contractAddress = '0xd6E3Ea8193EC49E92AFfa0A7051ED2Db93205bc2'
-    //console.log(`contract address ${contractAddress}`)
-    // processContract(contractAddress)
-=======
     let wallet = await getWallet(0)
     let contractWithSigner = contractInstance.connect(wallet);
     let tx = await contractWithSigner.store(ethers.BigNumber.from("0x15").add(currentValue),
         {
 
-            // gasLimit: 41646
+            //gasLimit: 41646
+            //gasLimit: 5010499
+            //gasLimit: 1005010499
+            // gasLimit: 225010499
+            // gasLimit: 10
+
         })
     let tx2 = await tx.wait()
     console.log(tx)
@@ -124,7 +111,6 @@ async function run() {
     //let contractAddress = '0xd6E3Ea8193EC49E92AFfa0A7051ED2Db93205bc2'
     console.log(`contract address ${contractAddress}`)
     processContract(contractAddress)
->>>>>>> 63215eca35dcb8054ef3a076cf0ec3042a56286d
 }
 
 run()
