@@ -63,8 +63,11 @@ async function createContract(): Promise<string> {
     const contractByteCode = fs.readFileSync('hello_sol_Hello.bin', 'utf-8')
     const contractAbi = JSON.parse(fs.readFileSync('hello_sol_Hello.abi', 'utf-8'))
     const provider = new ethers.providers.JsonRpcProvider(g_server);
-    const signer = provider.getSigner()
-    const factory = new ContractFactory(contractAbi, contractByteCode, signer)
+    let wallet = await getWallet(0)
+
+
+    const factory0 = new ContractFactory(contractAbi, contractByteCode)
+    const factory = factory0.connect(wallet);
     const contract = await factory.deploy()
     console.log(`contract ${JSON.stringify(contract)}`)
     console.log('mining')
@@ -117,8 +120,6 @@ async function runContract() {
 async function runPolling(): Promise<void> {
     console.log(`run polling`)
     const provider = new ethers.providers.JsonRpcProvider(g_server);
-    const signer = provider.getSigner()
-    const myaddr = await signer.getAddress()
 
     let walletMnemonic = await getWallet(0)
     const myaddress = await walletMnemonic.getAddress()
@@ -130,7 +131,7 @@ async function runPolling(): Promise<void> {
 
 
 
-    console.log(`myaddr= ${myaddr}`)
+
     console.log(`myaddress= ${myaddress}`)
 }
 async function ask(title: string): Promise<string> {
@@ -152,7 +153,7 @@ async function ask(title: string): Promise<string> {
 
 
 async function program() {
-    runPolling()
+    runContract()
     const a = await ask("test\n")
     console.log(`${a}`)
 }
