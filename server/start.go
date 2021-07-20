@@ -15,7 +15,6 @@ import (
 	"github.com/rs/cors"
 	"github.com/spf13/cobra"
 	"github.com/xlab/closer"
-	"github.com/xlab/suplog"
 	"google.golang.org/grpc"
 
 	tcmd "github.com/tendermint/tendermint/cmd/tendermint/commands"
@@ -40,6 +39,8 @@ import (
 
 	"github.com/tharsis/ethermint/cmd/ethermintd/config"
 	"github.com/tharsis/ethermint/ethereum/rpc"
+
+	tmlog "github.com/tendermint/tendermint/libs/log"
 )
 
 // Tendermint full-node start flags
@@ -164,10 +165,19 @@ which accepts a path for the resulting pprof file.
 	return cmd
 }
 
+type MyLogger struct {
+	mylogger *tmlog.Logger
+}
+
+var G_logger MyLogger = MyLogger{nil}
+
 func startInProcess(ctx *server.Context, clientCtx client.Context, appCreator types.AppCreator) error {
 	cfg := ctx.Config
 	home := cfg.RootDir
 	logger := ctx.Logger
+	G_logger.mylogger = &logger
+
+	(*G_logger.mylogger).Info("startInProcess ~~~~~~~~")
 
 	traceWriterFile := ctx.Viper.GetString(flagTraceStore)
 	db, err := openDB(home)
@@ -239,7 +249,8 @@ func startInProcess(ctx *server.Context, clientCtx client.Context, appCreator ty
 
 	// test code
 	// ethlog.Root().SetHandler(ethlog.StdoutHandler)
-	suplog.DefaultLogger.SetLevel(suplog.FatalLevel)
+	// suplog.DefaultLogger.SetLevel(suplog.FatalLevel)
+	// suplog.DefaultLogger.AddHook()
 
 	if config.EVMRPC.Enable {
 		tmEndpoint := "/websocket"
