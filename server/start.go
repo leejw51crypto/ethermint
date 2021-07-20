@@ -43,6 +43,7 @@ import (
 	"github.com/tharsis/ethermint/cmd/ethermintd/config"
 	"github.com/tharsis/ethermint/ethereum/rpc"
 
+	ethlog "github.com/ethereum/go-ethereum/log"
 	"github.com/sirupsen/logrus"
 	tmlog "github.com/tendermint/tendermint/libs/log"
 )
@@ -197,7 +198,7 @@ func startInProcess(ctx *server.Context, clientCtx client.Context, appCreator ty
 	logger := ctx.Logger
 	G_logger.mylogger = &logger
 
-	(*G_logger.mylogger).Info("startInProcess ~~~~~~~~")
+	(*G_logger.mylogger).Info(fmt.Sprintf("startInProcess ~~~~~~~~ %s", ctx.Config.LogLevel))
 
 	traceWriterFile := ctx.Viper.GetString(flagTraceStore)
 	db, err := openDB(home)
@@ -268,7 +269,11 @@ func startInProcess(ctx *server.Context, clientCtx client.Context, appCreator ty
 	var wsSrv rpc.WebsocketsServer
 
 	// test code
-	// ethlog.Root().SetHandler(ethlog.StdoutHandler)
+	if ctx.Config.LogLevel == "debug" {
+		ethlog.Root().SetHandler(ethlog.StdoutHandler)
+	}
+
+	//
 	//suplog.DefaultLogger.SetLevel(suplog.FatalLevel)
 	suplog.DefaultLogger.SetOutput(ioutil.Discard)
 	suplog.DefaultLogger.AddHook(G_logger)
