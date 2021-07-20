@@ -2,7 +2,9 @@ package server
 
 import (
 	"context"
+	"fmt"
 	"io"
+	"io/ioutil"
 	"net"
 	"net/http"
 	"os"
@@ -15,6 +17,7 @@ import (
 	"github.com/rs/cors"
 	"github.com/spf13/cobra"
 	"github.com/xlab/closer"
+	"github.com/xlab/suplog"
 	"google.golang.org/grpc"
 
 	tcmd "github.com/tendermint/tendermint/cmd/tendermint/commands"
@@ -40,6 +43,7 @@ import (
 	"github.com/tharsis/ethermint/cmd/ethermintd/config"
 	"github.com/tharsis/ethermint/ethereum/rpc"
 
+	"github.com/sirupsen/logrus"
 	tmlog "github.com/tendermint/tendermint/libs/log"
 )
 
@@ -169,6 +173,22 @@ type MyLogger struct {
 	mylogger *tmlog.Logger
 }
 
+/*
+type Hook interface {
+	Levels() []Level
+	Fire(*Entry) error
+}*/
+func (f MyLogger) Levels() []logrus.Level {
+	//return make([]logrus.Level, 0)
+	return []logrus.Level{logrus.DebugLevel, logrus.InfoLevel, logrus.TraceLevel, logrus.WarnLevel}
+}
+
+func (f MyLogger) Fire(entry *logrus.Entry) error {
+	a, _ := (*entry).String()
+	(*f.mylogger).Info(fmt.Sprintf("%s", a))
+	return nil
+}
+
 var G_logger MyLogger = MyLogger{nil}
 
 func startInProcess(ctx *server.Context, clientCtx client.Context, appCreator types.AppCreator) error {
@@ -249,8 +269,9 @@ func startInProcess(ctx *server.Context, clientCtx client.Context, appCreator ty
 
 	// test code
 	// ethlog.Root().SetHandler(ethlog.StdoutHandler)
-	// suplog.DefaultLogger.SetLevel(suplog.FatalLevel)
-	// suplog.DefaultLogger.AddHook()
+	//suplog.DefaultLogger.SetLevel(suplog.FatalLevel)
+	suplog.DefaultLogger.SetOutput(ioutil.Discard)
+	suplog.DefaultLogger.AddHook(G_logger)
 
 	if config.EVMRPC.Enable {
 		tmEndpoint := "/websocket"
