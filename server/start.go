@@ -185,7 +185,8 @@ func (f MyLogger) Levels() []logrus.Level {
 }
 
 func (f MyLogger) Fire(entry *logrus.Entry) error {
-	a, _ := (*entry).String()
+	// a, _ := (*entry).String()
+	a := (*entry).Message
 	(*f.mylogger).Info(fmt.Sprintf("%s", a))
 	return nil
 }
