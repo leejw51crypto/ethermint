@@ -1,1 +1,2 @@
-ethermintd start --log_level fatal 
+make install
+ethermintd start --log_level info 
