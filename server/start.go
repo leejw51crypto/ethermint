@@ -36,9 +36,8 @@ import (
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	ethrpc "github.com/ethereum/go-ethereum/rpc"
-
 	ethlog "github.com/ethereum/go-ethereum/log"
+	ethrpc "github.com/ethereum/go-ethereum/rpc"
 	"github.com/tharsis/ethermint/cmd/ethermintd/config"
 	"github.com/tharsis/ethermint/ethereum/rpc"
 	ethdebug "github.com/tharsis/ethermint/ethereum/rpc/namespaces/debug"
@@ -240,6 +239,8 @@ func startInProcess(ctx *server.Context, clientCtx client.Context, appCreator ty
 	var httpSrvDone = make(chan struct{}, 1)
 	var wsSrv rpc.WebsocketsServer
 
+	// test code
+	// ethlog.Root().SetHandler(ethlog.StdoutHandler)
 	ethlog.Root().SetHandler(log.NewHandler(ctx.Logger))
 
 	if config.EVMRPC.Enable {
