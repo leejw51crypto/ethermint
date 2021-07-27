@@ -1,9 +1,12 @@
 package log
 
 import (
+	"fmt"
+
 	"github.com/rs/zerolog"
 
 	"github.com/cosmos/cosmos-sdk/server"
+	"github.com/ethereum/go-ethereum/log"
 	ethlog "github.com/ethereum/go-ethereum/log"
 	tmlog "github.com/tendermint/tendermint/libs/log"
 )
@@ -15,8 +18,19 @@ type Handler struct {
 	*server.ZeroLogWrapper
 }
 
+// function.
+func FuncHandler(fn func(r *ethlog.Record) error) log.Handler {
+	return funcHandler(fn)
+}
+
+type funcHandler func(r *ethlog.Record) error
+
+func (h funcHandler) Log(r *log.Record) error {
+	return h(r)
+}
+
 func NewHandler(logger tmlog.Logger) ethlog.Handler {
-	zerologger, ok := logger.(*server.ZeroLogWrapper)
+	/*zerologger, ok := logger.(*server.ZeroLogWrapper)
 	if !ok {
 		// default to Stdout if not an SDK logger wrapper
 		return ethlog.StdoutHandler
@@ -24,18 +38,25 @@ func NewHandler(logger tmlog.Logger) ethlog.Handler {
 
 	return &Handler{
 		ZeroLogWrapper: zerologger,
-	}
+	}*/
+	return FuncHandler(func(r *log.Record) error {
+		fmt.Printf("################# %v", r)
+		return nil
+	})
 }
 
 // Log implements the go-ethereum Logger Handler interface
-func (h *Handler) Log(r *ethlog.Record) error {
-	lvl := EthLogLvlToZerolog(r.Lvl)
+func (h Handler) Log(r *ethlog.Record) error {
+	panic("ok")
+	//fmt.Printf("#######################    %v", r)
+
+	/*lvl := EthLogLvlToZerolog(r.Lvl)
 
 	h.ZeroLogWrapper.
 		WithLevel(lvl).
 		Fields(getLogFields(r.Ctx...)).
 		Time(r.KeyNames.Time, r.Time).
-		Msg(r.Msg)
+		Msg(r.Msg)*/
 	return nil
 }
 
