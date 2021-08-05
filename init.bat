@@ -68,4 +68,4 @@ ethermintd validate-genesis
 
 
 rem Start the node (remove the --pruning=nothing flag if historical queries are not needed)
-ethermintd start --pruning=nothing %TRACE% --log_level %LOGLEVEL% --minimum-gas-prices=0.0001aphoton
+ethermintd start --pruning=nothing %TRACE% --log_level %LOGLEVEL% --minimum-gas-prices=0.0001aphoton  --evm-rpc.address 0.0.0.0:9545
