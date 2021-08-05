@@ -11,7 +11,7 @@ import (
 
 // Commands registers a sub-tree of commands to interact with
 // local private key storage.
-func Commands(defaultNodeHome string) *cobra.Command {
+func Commands2(defaultNodeHome string) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "keys",
 		Short: "Manage your application's keys",
