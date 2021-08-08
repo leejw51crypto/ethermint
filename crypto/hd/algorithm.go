@@ -3,6 +3,7 @@ package hd
 import (
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcutil/hdkeychain"
+	"github.com/tharsis/ethermint/crypto/ethsecp256k1"
 	bip39 "github.com/tyler-smith/go-bip39"
 
 	ethaccounts "github.com/ethereum/go-ethereum/accounts"
@@ -11,8 +12,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/crypto/hd"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
-
-	"github.com/tharsis/ethermint/crypto/ethsecp256k1"
 )
 
 const (

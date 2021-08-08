@@ -206,14 +206,15 @@ func RunAddCmd(ctx client.Context, cmd *cobra.Command, args []string, inBuf *buf
 	// If we're using ledger, only thing we need is the path and the bech32 prefix.
 	if useLedger {
 		fmt.Printf("use ledger ########################################\n")
-		bech32PrefixAccAddr := sdk.GetConfig().GetBech32AccountAddrPrefix()
+		/*bech32PrefixAccAddr := sdk.GetConfig().GetBech32AccountAddrPrefix()
 
 		info, err := kb.SaveLedgerKey(name, algo, bech32PrefixAccAddr, coinType, account, index)
 		if err != nil {
 			return err
 		}
 
-		return printCreate(cmd, info, false, "", outputFormat)
+		return printCreate(cmd, info, false, "", outputFormat)*/
+		return nil
 	}
 
 	// Get bip39 mnemonic
