@@ -6,6 +6,10 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/usbwallet"
 
 	"github.com/cosmos/cosmos-sdk/client"
+	"github.com/cosmos/cosmos-sdk/client/flags"
+	"github.com/cosmos/cosmos-sdk/client/tx"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/spf13/cobra"
 )
 
@@ -54,6 +58,7 @@ func ledgerCommand() *cobra.Command {
 		RunE:                       client.ValidateCmd,
 	}
 
+	// add
 	addCmd := &cobra.Command{
 		Use:   "add",
 		Short: "Add ledger address",
@@ -61,6 +66,7 @@ func ledgerCommand() *cobra.Command {
 	}
 	addCmd.Flags().Uint32(flagIndex, 0, "Address index number for HD derivation")
 
+	// sign
 	signCmd := &cobra.Command{
 		Use:   "sign",
 		Short: "Sign via ledger",
@@ -70,14 +76,34 @@ func ledgerCommand() *cobra.Command {
 		},
 	}
 
+	// send
 	sendCmd := &cobra.Command{
-		Use:   "send",
-		Short: "Send via ledger",
-		RunE: func(_ *cobra.Command, _ []string) error {
-			fmt.Println("add address via ledger")
-			return nil
+		Use: "send [from_key_or_address] [to_address] [amount]",
+		Short: `Send funds from one account to another. Note, the'--from' flag is
+ignored as it is implied from [from_key_or_address].`,
+		Args: cobra.ExactArgs(3),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cmd.Flags().Set(flags.FlagFrom, args[0])
+			clientCtx, err := client.GetClientTxContext(cmd)
+			if err != nil {
+				return err
+			}
+			toAddr, err := sdk.AccAddressFromBech32(args[1])
+			if err != nil {
+				return err
+			}
+
+			coins, err := sdk.ParseCoinsNormalized(args[2])
+			if err != nil {
+				return err
+			}
+
+			msg := types.NewMsgSend(clientCtx.GetFromAddress(), toAddr, coins)
+
+			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
 		},
 	}
+	flags.AddTxFlagsToCmd(cmd)
 
 	cmd.AddCommand(addCmd, signCmd, sendCmd)
 
