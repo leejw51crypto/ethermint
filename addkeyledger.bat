@@ -5,5 +5,5 @@ set MONIKER="localtestnet"
 set KEYRING=test
 
 echo %MYMNEMONICS%
-ethermintd keys add %KEY% --keyring-backend %KEYRING% --algo "eth_secp256k1" --index 0 --ledger
+ethermintd keys add %KEY% --keyring-backend %KEYRING% --algo "eth_secp256k1" --index 2 --ledger
 

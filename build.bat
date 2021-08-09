@@ -8,4 +8,4 @@ set TRACE="--trace"
 
 del ethermintd.exe
 @echo build binary
-go build  -tags cgo,ledger .\cmd\ethermintd 
+go build  -tags cgo,ledger --ldflags "-extldflags \"-Wl,--allow-multiple-definition\"" .\cmd\ethermintd 

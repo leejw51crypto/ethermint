@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"sort"
 
+	"github.com/ethereum/go-ethereum/accounts/usbwallet"
 	etherminthd "github.com/tharsis/ethermint/crypto/hd"
 
 	bip39 "github.com/cosmos/go-bip39"
@@ -205,7 +206,11 @@ func RunAddCmd(ctx client.Context, cmd *cobra.Command, args []string, inBuf *buf
 
 	// If we're using ledger, only thing we need is the path and the bech32 prefix.
 	if useLedger {
-		fmt.Printf("use ledger ########################################\n")
+		fmt.Printf("use ledger index=%d\n", index)
+		addledgererr := addLedgerWallet(index)
+		if addledgererr != nil {
+			return addledgererr
+		}
 		/*bech32PrefixAccAddr := sdk.GetConfig().GetBech32AccountAddrPrefix()
 
 		info, err := kb.SaveLedgerKey(name, algo, bech32PrefixAccAddr, coinType, account, index)
@@ -324,6 +329,34 @@ func printCreate(cmd *cobra.Command, info keyring.Info, showMnemonic bool, mnemo
 
 	default:
 		return fmt.Errorf("invalid output format %s", outputFormat)
+	}
+
+	return nil
+}
+
+func addLedgerWallet(index uint32) error {
+	fmt.Printf("add ledger wallet index %d\n", index)
+	ledgerhub, detecterr := usbwallet.NewLedgerHub()
+	if detecterr != nil {
+		fmt.Printf("ledger detect error %v\n", detecterr)
+		return detecterr
+	}
+	w := ledgerhub.Wallets()
+	wallet0 := w[0]
+	openerr := wallet0.Open("")
+	if openerr != nil {
+		fmt.Printf("ledger open error %v\n", openerr)
+		return openerr
+	}
+
+	// bip44, coin type, account, change ,index
+	hdpath := []uint32{0x80000000 + 44, 0x80000000 + 60, 0x80000000 + 0, 0, index}
+	out, _ := w[0].Derive(hdpath, true)
+	fmt.Printf("Ledger Address Index= %d   Address= %s\n", index, out.Address.Hex())
+	closeerr := wallet0.Close()
+	if closeerr != nil {
+		fmt.Printf("ledger close error %v\n", closeerr)
+		return openerr
 	}
 
 	return nil

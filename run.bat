@@ -18,7 +18,7 @@ set TRACE="--trace"
 
 del ethermintd.exe
 @echo build binary
-go build  -tags cgo,ledger .\cmd\ethermintd
+go build  -tags cgo,ledger   -tags cgo,ledger --ldflags "-extldflags \"-Wl,--allow-multiple-definition\"" .\cmd\ethermintd
 
 ethermintd start --pruning=nothing %TRACE% --log_level %LOGLEVEL% --minimum-gas-prices=0.0001aphoton  --evm-rpc.address 0.0.0.0:9545
 
