@@ -113,6 +113,7 @@ func NewRootCmd() (*cobra.Command, params.EncodingConfig) {
 		rpc.StatusCommand(),
 		queryCommand(),
 		txCommand(),
+		ledgerCommand(),
 		ethermintclient.KeyCommands(app.DefaultNodeHome),
 	)
 	rootCmd = server.AddTxFlags(rootCmd)
