@@ -1,16 +1,20 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
+	"os"
 
 	"github.com/ethereum/go-ethereum/accounts/usbwallet"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
-	"github.com/cosmos/cosmos-sdk/client/tx"
+	"github.com/cosmos/cosmos-sdk/client/input"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/spf13/cobra"
+
+	clienttx "github.com/cosmos/cosmos-sdk/client/tx"
 )
 
 const (
@@ -100,7 +104,9 @@ ignored as it is implied from [from_key_or_address].`,
 
 			msg := types.NewMsgSend(clientCtx.GetFromAddress(), toAddr, coins)
 
-			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
+			//return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
+			txf := clienttx.NewFactoryCLI(clientCtx, cmd.Flags())
+			return LedgerBroadcastTx(clientCtx, txf, msg)
 		},
 	}
 	flags.AddTxFlagsToCmd(cmd)
@@ -108,4 +114,96 @@ ignored as it is implied from [from_key_or_address].`,
 	cmd.AddCommand(addCmd, signCmd, sendCmd)
 
 	return cmd
+}
+
+func LedgerBroadcastTx(clientCtx client.Context, txf clienttx.Factory, msgs ...sdk.Msg) error {
+	txf, err := prepareFactory(clientCtx, txf)
+	if err != nil {
+		return err
+	}
+
+	if txf.SimulateAndExecute() || clientCtx.Simulate {
+		_, adjusted, err := clienttx.CalculateGas(clientCtx, txf, msgs...)
+		if err != nil {
+			return err
+		}
+
+		txf = txf.WithGas(adjusted)
+		_, _ = fmt.Fprintf(os.Stderr, "%s\n", clienttx.GasEstimateResponse{GasEstimate: txf.Gas()})
+	}
+
+	if clientCtx.Simulate {
+		return nil
+	}
+
+	tx, err := clienttx.BuildUnsignedTx(txf, msgs...)
+	if err != nil {
+		return err
+	}
+
+	if !clientCtx.SkipConfirm {
+		out, err := clientCtx.TxConfig.TxJSONEncoder()(tx.GetTx())
+		if err != nil {
+			return err
+		}
+
+		_, _ = fmt.Fprintf(os.Stderr, "%s\n\n", out)
+
+		buf := bufio.NewReader(os.Stdin)
+		ok, err := input.GetConfirmation("confirm transaction before signing and broadcasting", buf, os.Stderr)
+
+		if err != nil || !ok {
+			_, _ = fmt.Fprintf(os.Stderr, "%s\n", "cancelled transaction")
+			return err
+		}
+	}
+
+	tx.SetFeeGranter(clientCtx.GetFeeGranterAddress())
+	err = clienttx.Sign(txf, clientCtx.GetFromName(), tx, true)
+	if err != nil {
+		return err
+	}
+
+	txBytes, err := clientCtx.TxConfig.TxEncoder()(tx.GetTx())
+	if err != nil {
+		return err
+	}
+
+	// broadcast to a Tendermint node
+	res, err := clientCtx.BroadcastTx(txBytes)
+	if err != nil {
+		return err
+	}
+
+	return clientCtx.PrintProto(res)
+}
+
+// prepareFactory ensures the account defined by ctx.GetFromAddress() exists and
+// if the account number and/or the account sequence number are zero (not set),
+// they will be queried for and set on the provided Factory. A new Factory with
+// the updated fields will be returned.
+func prepareFactory(clientCtx client.Context, txf clienttx.Factory) (clienttx.Factory, error) {
+	from := clientCtx.GetFromAddress()
+
+	if err := txf.AccountRetriever().EnsureExists(clientCtx, from); err != nil {
+		return txf, err
+	}
+
+	initNum, initSeq := txf.AccountNumber(), txf.Sequence()
+	if initNum == 0 || initSeq == 0 {
+		num, seq, err := txf.AccountRetriever().GetAccountNumberSequence(clientCtx, from)
+		if err != nil {
+			return txf, err
+		}
+
+		if initNum == 0 {
+			txf = txf.WithAccountNumber(num)
+		}
+
+		if initSeq == 0 {
+			txf = txf.WithSequence(seq)
+		}
+	}
+
+	return txf, nil
 }
