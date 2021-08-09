@@ -3,10 +3,46 @@ package main
 import (
 	"fmt"
 
+	"github.com/ethereum/go-ethereum/accounts/usbwallet"
+
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/spf13/cobra"
-	"github.com/tharsis/ethermint/version"
 )
+
+const (
+	flagIndex = "index"
+)
+
+func runAddCmd(cmd *cobra.Command, _ []string) error {
+	index, _ := cmd.Flags().GetUint32(flagIndex)
+	fmt.Printf("add address index= %d\n", index)
+
+	fmt.Printf("add ledger wallet index %d\n", index)
+	ledgerhub, detecterr := usbwallet.NewLedgerHub()
+	if detecterr != nil {
+		fmt.Printf("ledger detect error %v\n", detecterr)
+		return detecterr
+	}
+	w := ledgerhub.Wallets()
+	wallet0 := w[0]
+	openerr := wallet0.Open("")
+	if openerr != nil {
+		fmt.Printf("ledger open error %v\n", openerr)
+		return openerr
+	}
+
+	// bip44, coin type, account, change ,index
+	hdpath := []uint32{0x80000000 + 44, 0x80000000 + 60, 0x80000000 + 0, 0, index}
+	out, _ := w[0].Derive(hdpath, true)
+	fmt.Printf("Ledger Address Index= %d   Address= %s\n", index, out.Address.Hex())
+	closeerr := wallet0.Close()
+	if closeerr != nil {
+		fmt.Printf("ledger close error %v\n", closeerr)
+		return openerr
+	}
+
+	return nil
+}
 
 func ledgerCommand() *cobra.Command {
 	cmd := &cobra.Command{
@@ -18,23 +54,12 @@ func ledgerCommand() *cobra.Command {
 		RunE:                       client.ValidateCmd,
 	}
 
-	infoCmd := &cobra.Command{
-		Use:   "info",
-		Short: "Print version info",
-		RunE: func(_ *cobra.Command, _ []string) error {
-			fmt.Println(version.Version())
-			return nil
-		},
-	}
-
 	addCmd := &cobra.Command{
 		Use:   "add",
 		Short: "Add ledger address",
-		RunE: func(_ *cobra.Command, _ []string) error {
-			fmt.Println("add address")
-			return nil
-		},
+		RunE:  runAddCmd,
 	}
+	addCmd.Flags().Uint32(flagIndex, 0, "Address index number for HD derivation")
 
 	signCmd := &cobra.Command{
 		Use:   "sign",
@@ -54,7 +79,7 @@ func ledgerCommand() *cobra.Command {
 		},
 	}
 
-	cmd.AddCommand(infoCmd, addCmd, signCmd, sendCmd)
+	cmd.AddCommand(addCmd, signCmd, sendCmd)
 
 	return cmd
 }
