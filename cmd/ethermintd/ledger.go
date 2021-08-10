@@ -14,6 +14,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"
 	authsigning "github.com/cosmos/cosmos-sdk/x/auth/signing"
 	"github.com/cosmos/cosmos-sdk/x/bank/types"
+	ethcrypto "github.com/ethereum/go-ethereum/crypto"
 	"github.com/spf13/cobra"
 )
 
@@ -288,7 +289,12 @@ func Sign(txconfig client.TxConfig, txf clienttx.Factory, name string, txBuilder
 		return err
 	}
 
+	fmt.Printf("bytes to sign length %d  %v\n", len(bytesToSign), hexutil.Encode(bytesToSign))
+	digestBz := ethcrypto.Keccak256Hash(bytesToSign).Bytes()
+	fmt.Printf("digest bytes %d  %v\n", len(digestBz), hexutil.Encode(digestBz))
 	sigBytes, _, err := txf.Keybase().Sign(name, bytesToSign)
+	ledgerSign(digestBz)
+
 	// 65 bytes
 	fmt.Printf("signature length %d  %s\n", len(sigBytes), hexutil.Encode(sigBytes))
 	if err != nil {
@@ -310,4 +316,10 @@ func Sign(txconfig client.TxConfig, txf clienttx.Factory, name string, txBuilder
 	}
 	prevSignatures = append(prevSignatures, sig)
 	return txBuilder.SetSignatures(prevSignatures...)
+}
+
+func ledgerSign(digestBytes []byte) error {
+	fmt.Printf("########################### ledger sign\n")
+	fmt.Printf("ledger sign  %d   %s\n", len(digestBytes), hexutil.Encode(digestBytes))
+	return nil
 }
