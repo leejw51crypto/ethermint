@@ -1,20 +1,19 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
 	"os"
 
-	"github.com/ethereum/go-ethereum/accounts/usbwallet"
+	"github.com/tharsis/ethermint/usbwallet"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
-	"github.com/cosmos/cosmos-sdk/client/input"
+	clienttx "github.com/cosmos/cosmos-sdk/client/tx"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/tx/signing"
+	authsigning "github.com/cosmos/cosmos-sdk/x/auth/signing"
 	"github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/spf13/cobra"
-
-	clienttx "github.com/cosmos/cosmos-sdk/client/tx"
 )
 
 const (
@@ -106,6 +105,7 @@ ignored as it is implied from [from_key_or_address].`,
 
 			//return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
 			txf := clienttx.NewFactoryCLI(clientCtx, cmd.Flags())
+
 			return LedgerBroadcastTx(clientCtx, txf, msg)
 		},
 	}
@@ -117,6 +117,7 @@ ignored as it is implied from [from_key_or_address].`,
 }
 
 func LedgerBroadcastTx(clientCtx client.Context, txf clienttx.Factory, msgs ...sdk.Msg) error {
+
 	txf, err := prepareFactory(clientCtx, txf)
 	if err != nil {
 		return err
@@ -141,25 +142,30 @@ func LedgerBroadcastTx(clientCtx client.Context, txf clienttx.Factory, msgs ...s
 		return err
 	}
 
-	if !clientCtx.SkipConfirm {
-		out, err := clientCtx.TxConfig.TxJSONEncoder()(tx.GetTx())
-		if err != nil {
-			return err
+	/*
+		if !clientCtx.SkipConfirm {
+			out, err := clientCtx.TxConfig.TxJSONEncoder()(tx.GetTx())
+			if err != nil {
+				return err
+			}
+
+			_, _ = fmt.Fprintf(os.Stderr, "%s\n\n", out)
+
+			buf := bufio.NewReader(os.Stdin)
+			ok, err := input.GetConfirmation("confirm transaction before signing and broadcasting", buf, os.Stderr)
+
+			if err != nil || !ok {
+				_, _ = fmt.Fprintf(os.Stderr, "%s\n", "cancelled transaction")
+				return err
+			}
 		}
-
-		_, _ = fmt.Fprintf(os.Stderr, "%s\n\n", out)
-
-		buf := bufio.NewReader(os.Stdin)
-		ok, err := input.GetConfirmation("confirm transaction before signing and broadcasting", buf, os.Stderr)
-
-		if err != nil || !ok {
-			_, _ = fmt.Fprintf(os.Stderr, "%s\n", "cancelled transaction")
-			return err
-		}
-	}
+	*/
 
 	tx.SetFeeGranter(clientCtx.GetFeeGranterAddress())
-	err = clienttx.Sign(txf, clientCtx.GetFromName(), tx, true)
+	//	err = clienttx.Sign(txf, clientCtx.GetFromName(), tx, true)
+
+	err = Sign(clientCtx.TxConfig, txf, clientCtx.GetFromName(), tx, true)
+
 	if err != nil {
 		return err
 	}
@@ -206,4 +212,92 @@ func prepareFactory(clientCtx client.Context, txf clienttx.Factory) (clienttx.Fa
 	}
 
 	return txf, nil
+}
+
+func Sign(txconfig client.TxConfig, txf clienttx.Factory, name string, txBuilder client.TxBuilder, overwriteSig bool) error {
+	/*if txf.keybase == nil {
+		return errors.New("keybase must be set prior to signing a transaction")
+	}*/
+
+	signMode := txf.SignMode()
+	if signMode == signing.SignMode_SIGN_MODE_UNSPECIFIED {
+		// use the SignModeHandler's default mode if unspecified
+		signMode = txconfig.SignModeHandler().DefaultMode()
+	}
+
+	/*if err := checkMultipleSigners(signMode, txBuilder.GetTx()); err != nil {
+		return err
+	}*/
+	fmt.Printf("sign mode %v\n", signMode)
+	key, err := txf.Keybase().Key(name)
+	if err != nil {
+		return err
+	}
+	pubKey := key.GetPubKey()
+
+	//	pubKey := make([]byte, 64, 64)
+
+	signerData := authsigning.SignerData{
+		ChainID:       txf.ChainID(),
+		AccountNumber: txf.AccountNumber(),
+		Sequence:      txf.Sequence(),
+	}
+
+	// For SIGN_MODE_DIRECT, calling SetSignatures calls setSignerInfos on
+	// TxBuilder under the hood, and SignerInfos is needed to generated the
+	// sign bytes. This is the reason for setting SetSignatures here, with a
+	// nil signature.
+	//
+	// Note: this line is not needed for SIGN_MODE_LEGACY_AMINO, but putting it
+	// also doesn't affect its generated sign bytes, so for code's simplicity
+	// sake, we put it here.
+	sigData := signing.SingleSignatureData{
+		SignMode:  signMode,
+		Signature: nil,
+	}
+	sig := signing.SignatureV2{
+		PubKey:   pubKey,
+		Data:     &sigData,
+		Sequence: txf.Sequence(),
+	}
+	var prevSignatures []signing.SignatureV2
+	if !overwriteSig {
+		prevSignatures, err = txBuilder.GetTx().GetSignaturesV2()
+		if err != nil {
+			return err
+		}
+	}
+	if err := txBuilder.SetSignatures(sig); err != nil {
+		return err
+	}
+
+	// Generate the bytes to be signed.
+	bytesToSign, err := txconfig.SignModeHandler().GetSignBytes(signMode, signerData, txBuilder.GetTx())
+	if err != nil {
+		return err
+	}
+
+	// Sign those bytes
+
+	sigBytes, _, err := txf.Keybase().Sign(name, bytesToSign)
+	if err != nil {
+		return err
+	}
+
+	// Construct the SignatureV2 struct
+	sigData = signing.SingleSignatureData{
+		SignMode:  signMode,
+		Signature: sigBytes,
+	}
+	sig = signing.SignatureV2{
+		PubKey:   pubKey,
+		Data:     &sigData,
+		Sequence: txf.Sequence(),
+	}
+
+	if overwriteSig {
+		return txBuilder.SetSignatures(sig)
+	}
+	prevSignatures = append(prevSignatures, sig)
+	return txBuilder.SetSignatures(prevSignatures...)
 }

@@ -25,6 +25,7 @@ require (
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0
 	github.com/hashicorp/go-immutable-radix v1.3.0 // indirect
 	github.com/improbable-eng/grpc-web v0.14.0
+	github.com/karalabe/usb v0.0.0-20190919080040-51dc0efba356 // indirect
 	github.com/kardianos/osext v0.0.0-20190222173326-2bc1f35cddc0 // indirect
 	github.com/miguelmota/go-ethereum-hdwallet v0.0.1
 	github.com/palantir/stacktrace v0.0.0-20161112013806-78658fd2d177
