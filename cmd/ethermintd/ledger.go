@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/tharsis/ethermint/usbwallet"
 
 	"github.com/cosmos/cosmos-sdk/client"
@@ -243,6 +244,8 @@ func Sign(txconfig client.TxConfig, txf clienttx.Factory, name string, txBuilder
 		return err
 	}
 	pubKey := key.GetPubKey()
+	// 33 bytes
+	fmt.Printf("pubkey length %d  %s\n", len(pubKey.Bytes()), hexutil.Encode(pubKey.Bytes()))
 
 	//	pubKey := make([]byte, 64, 64)
 
@@ -280,20 +283,18 @@ func Sign(txconfig client.TxConfig, txf clienttx.Factory, name string, txBuilder
 		return err
 	}
 
-	// Generate the bytes to be signed.
 	bytesToSign, err := txconfig.SignModeHandler().GetSignBytes(signMode, signerData, txBuilder.GetTx())
 	if err != nil {
 		return err
 	}
 
-	// Sign those bytes
-
 	sigBytes, _, err := txf.Keybase().Sign(name, bytesToSign)
+	// 65 bytes
+	fmt.Printf("signature length %d  %s\n", len(sigBytes), hexutil.Encode(sigBytes))
 	if err != nil {
 		return err
 	}
 
-	// Construct the SignatureV2 struct
 	sigData = signing.SingleSignatureData{
 		SignMode:  signMode,
 		Signature: sigBytes,
