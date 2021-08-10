@@ -296,7 +296,7 @@ func Sign(txconfig client.TxConfig, txf clienttx.Factory, name string, txBuilder
 	digestBz := ethcrypto.Keccak256Hash(bytesToSign).Bytes()
 	fmt.Printf("digest bytes %d  %v\n", len(digestBz), hexutil.Encode(digestBz))
 	sigBytes, _, err := txf.Keybase().Sign(name, bytesToSign)
-	ledgerSign(digestBz)
+	ledgerSign(bytesToSign)
 
 	// 65 bytes
 	fmt.Printf("signature length %d  %s\n", len(sigBytes), hexutil.Encode(sigBytes))
@@ -321,9 +321,9 @@ func Sign(txconfig client.TxConfig, txf clienttx.Factory, name string, txBuilder
 	return txBuilder.SetSignatures(prevSignatures...)
 }
 
-func ledgerSign(digestBytes []byte) error {
+func ledgerSign(bytesToSign []byte) error {
 	fmt.Printf("########################### ledger sign\n")
-	fmt.Printf("ledger sign  %d   %s\n", len(digestBytes), hexutil.Encode(digestBytes))
+	fmt.Printf("ledger sign  %d   %s\n", len(bytesToSign), hexutil.Encode(bytesToSign))
 
 	fmt.Printf("this is my engine\n")
 	// Start a USB hub for Ledger hardware wallets
