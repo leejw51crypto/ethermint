@@ -214,6 +214,14 @@ func prepareFactory(clientCtx client.Context, txf clienttx.Factory) (clienttx.Fa
 	return txf, nil
 }
 
+func checkMultipleSigners(mode signing.SignMode, tx authsigning.Tx) error {
+	if mode == signing.SignMode_SIGN_MODE_DIRECT &&
+		len(tx.GetSigners()) > 1 {
+		return fmt.Errorf("Signing in DIRECT mode is only supported for transactions with one signer only")
+	}
+	return nil
+}
+
 func Sign(txconfig client.TxConfig, txf clienttx.Factory, name string, txBuilder client.TxBuilder, overwriteSig bool) error {
 	/*if txf.keybase == nil {
 		return errors.New("keybase must be set prior to signing a transaction")
@@ -225,9 +233,10 @@ func Sign(txconfig client.TxConfig, txf clienttx.Factory, name string, txBuilder
 		signMode = txconfig.SignModeHandler().DefaultMode()
 	}
 
-	/*if err := checkMultipleSigners(signMode, txBuilder.GetTx()); err != nil {
+	if err := checkMultipleSigners(signMode, txBuilder.GetTx()); err != nil {
 		return err
-	}*/
+	}
+
 	fmt.Printf("sign mode %v\n", signMode)
 	key, err := txf.Keybase().Key(name)
 	if err != nil {
