@@ -2,9 +2,11 @@ package main
 
 import (
 	"fmt"
+	"math/big"
 	"os"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/tharsis/ethermint/usbwallet"
 
 	"github.com/cosmos/cosmos-sdk/client"
@@ -14,6 +16,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"
 	authsigning "github.com/cosmos/cosmos-sdk/x/auth/signing"
 	"github.com/cosmos/cosmos-sdk/x/bank/types"
+	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	ethcrypto "github.com/ethereum/go-ethereum/crypto"
 	"github.com/spf13/cobra"
 )
@@ -321,5 +324,46 @@ func Sign(txconfig client.TxConfig, txf clienttx.Factory, name string, txBuilder
 func ledgerSign(digestBytes []byte) error {
 	fmt.Printf("########################### ledger sign\n")
 	fmt.Printf("ledger sign  %d   %s\n", len(digestBytes), hexutil.Encode(digestBytes))
+
+	fmt.Printf("this is my engine\n")
+	// Start a USB hub for Ledger hardware wallets
+	ledgerhub, err := usbwallet.NewLedgerHub()
+	if err != nil {
+		return fmt.Errorf("Failed to start Ledger hub, disabling: %v", err)
+	}
+	fmt.Printf("found ledger hub %v\n", ledgerhub)
+	w := ledgerhub.Wallets()
+	fmt.Printf("wallets %+v\n", w)
+
+	fmt.Printf("wallets length %d\n", len(w))
+	openerr := w[0].Open("")
+	fmt.Printf("open %v\n", openerr)
+	index := uint32(0)
+	// 44, coin   ,   account, change, index
+	hdpath := []uint32{0x80000000 + 44, 0x80000000 + 60, 0x80000000 + 0, 0, index}
+
+	out, _ := w[0].Derive(hdpath, true)
+	fmt.Printf("derived index %d = %v,  %v\n", index, out.Address, out)
+
+	wallet0 := w[0]
+	accounts := wallet0.Accounts()
+	fmt.Printf("accounts  length %d\n", len(accounts))
+
+	for index, element := range accounts {
+		fmt.Printf("index %d account %v\n", index, element)
+	}
+
+	key, _ := crypto.GenerateKey()
+	addr := crypto.PubkeyToAddress(key.PublicKey)
+	fmt.Printf("address %v\n", addr)
+
+	chainid := big.NewInt(18)
+	tx, err := wallet0.SignTx(accounts[0], ethtypes.NewTransaction(0, addr, new(big.Int), 0, new(big.Int), nil), chainid)
+	txjson, _ := tx.MarshalJSON()
+	fmt.Printf("tx json %v\n", string(txjson))
+	v, r, s := tx.RawSignatureValues()
+	fmt.Printf("tx chainid %v %v %v\n", chainid, tx, err)
+	fmt.Printf("signature v=%v r=%v s=%v\n", v, r, s)
+
 	return nil
 }
