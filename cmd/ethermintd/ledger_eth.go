@@ -182,16 +182,18 @@ func SendTransactionEth(
 	args rpctypes.SendTxArgs) (common.Hash, error) {
 
 	epoch, epocherr := ethermint.ParseChainID(clientCtx.ChainID)
+	fmt.Printf("epoch = %+v\n", epoch)
 	if epocherr != nil {
 		panic(epocherr)
 	}
 
 	// Look up the wallet containing the requested signer
-	_, err := clientCtx.Keyring.KeyByAddress(sdk.AccAddress(args.From.Bytes()))
+	keyringinfo, err := clientCtx.Keyring.KeyByAddress(sdk.AccAddress(args.From.Bytes()))
 	if err != nil {
 
 		return common.Hash{}, fmt.Errorf("%s; %s", keystore.ErrNoMatch, err.Error())
 	}
+	fmt.Printf("keyring info %+v\n", keyringinfo)
 
 	args, err = setTxDefaults(clientCtx, backend, epoch, args)
 	if err != nil {

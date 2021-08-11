@@ -2,7 +2,10 @@ package main
 
 import (
 	"fmt"
+	"math/big"
 
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/tharsis/ethermint/ethereum/rpc/backend"
 	"github.com/tharsis/ethermint/usbwallet"
 
@@ -106,7 +109,48 @@ ignored as it is implied from [from_key_or_address].`,
 			evmBackend := backend.NewEVMBackend(log.NewNopLogger(), clientCtx)
 			queryClient := rpctypes.NewQueryClient(clientCtx)
 
-			sendarg := rpctypes.SendTxArgs{}
+			/*
+						From     common.Address  `json:"from"`
+				To       *common.Address `json:"to"`
+				Gas      *hexutil.Uint64 `json:"gas"`
+				GasPrice *hexutil.Big    `json:"gasPrice"`
+				Value    *hexutil.Big    `json:"value"`
+				Nonce    *hexutil.Uint64 `json:"nonce"`
+				// We accept "data" and "input" for backwards-compatibility reasons. "input" is the
+				// newer name and should be preferred by clients.
+				Data  *hexutil.Bytes `json:"data"`
+				Input *hexutil.Bytes `json:"input"`
+				// For non-legacy transactions
+				AccessList *ethtypes.AccessList `json:"accessList,omitempty"`
+				ChainID    *hexutil.Big         `json:"chainId,omitempty"`
+			*/
+			test1, _ := hexutil.Decode("0x1234")
+			test2 := hexutil.Encode(test1)
+			fmt.Printf("test %v %s\n", test1, test2)
+
+			fromaddr2, _ := hexutil.Decode("0x48B212A71EBBB202F7CFD1AACEE3A36FDE2FBC51")
+			fromaddr := common.BytesToAddress(fromaddr2)
+			toaddr2, _ := hexutil.Decode("0x14F7B5EFAE3B1ECE60CB6AC0ACC67367E2C2E0F8")
+			toaddr := common.BytesToAddress(toaddr2)
+
+			gas := uint64(20000000000)
+			//	nonce := uint64(0)
+
+			data2, _ := hexutil.Decode("0x")
+			data := hexutil.Bytes(data2)
+
+			input2, _ := hexutil.Decode("0x")
+			input := hexutil.Bytes(input2)
+			sendarg := rpctypes.SendTxArgs{
+				From:     fromaddr,
+				To:       &toaddr,
+				Gas:      (*hexutil.Uint64)(&gas),
+				GasPrice: (*hexutil.Big)(big.NewInt(20000000)),
+				Value:    (*hexutil.Big)(big.NewInt(2)),
+				Data:     &data,
+				Input:    &input,
+			}
+			fmt.Printf("sendarg= %+v\n", sendarg)
 			txhash, err := SendTransactionEth(clientCtx, evmBackend, queryClient, sendarg)
 			fmt.Printf("txhash= %v\n", txhash)
 			return err
