@@ -16,6 +16,7 @@ require (
 	github.com/cosmos/ibc-go v1.0.0-rc3
 	github.com/deckarep/golang-set v1.7.1 // indirect
 	github.com/ethereum/go-ethereum v1.10.3
+	github.com/go-kit/kit v0.10.0 // indirect
 	github.com/gofrs/uuid v4.0.0+incompatible // indirect
 	github.com/gogo/protobuf v1.3.3
 	github.com/golang/protobuf v1.5.2

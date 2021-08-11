@@ -12,6 +12,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
+	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
@@ -175,6 +176,30 @@ func setTxDefaults(clientCtx client.Context,
 	return args, nil
 }
 
+func SignMsg(msg *evmtypes.MsgEthereumTx, ethSigner ethtypes.Signer, keyringSigner keyring.Signer) error {
+	fmt.Printf("####  SignMsg ~~~~~~~~~~~~~~~~\n")
+	from := msg.GetFrom()
+	if from.Empty() {
+		return fmt.Errorf("sender address not defined for message")
+	}
+
+	tx := msg.AsTransaction()
+	txHash := ethSigner.Hash(tx)
+
+	sig, _, err := keyringSigner.SignByAddress(from, txHash.Bytes())
+	if err != nil {
+		return err
+	}
+
+	tx, err = tx.WithSignature(ethSigner, sig)
+	if err != nil {
+		return err
+	}
+
+	msg.FromEthereumTx(tx)
+	return nil
+}
+
 func SendTransactionEth(
 	clientCtx client.Context,
 	backend backend.Backend,
@@ -210,8 +235,12 @@ func SendTransactionEth(
 	// TODO: get from chain config
 	signer := ethtypes.LatestSignerForChainID(args.ChainID.ToInt())
 
+	fmt.Printf("################################\n")
+
+	fmt.Printf("message to sign= %+v\n", msg.AsTransaction())
+
 	// Sign transaction
-	if err := msg.Sign(signer, clientCtx.Keyring); err != nil {
+	if err := SignMsg(msg, signer, clientCtx.Keyring); err != nil {
 
 		return common.Hash{}, err
 	}
