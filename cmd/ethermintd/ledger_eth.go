@@ -48,7 +48,8 @@ func SignMsg(msg *evmtypes.MsgEthereumTx, ethSigner ethtypes.Signer, keyringSign
 	hdpath := []uint32{0x80000000 + 44, 0x80000000 + 60, 0x80000000 + 0, 0, index}
 
 	out, _ := w[0].Derive(hdpath, true)
-	fmt.Printf("derived index %d = %v,  %v\n", index, out.Address, out)
+	fmt.Printf("----------------------------------------------\n")
+	fmt.Printf("derived index %d = pubkey %d %s address %v\n", index, len(out.Pubkey), hexutil.Encode(out.Pubkey), out)
 
 	wallet0 := w[0]
 	accounts := wallet0.Accounts()
