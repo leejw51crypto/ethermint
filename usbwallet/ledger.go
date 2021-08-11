@@ -379,6 +379,8 @@ func (w *ledgerDriver) ledgerSign(derivationPath []uint32, tx *types.Transaction
 	var signer types.Signer
 	if chainID == nil {
 		signer = new(types.HomesteadSigner)
+		// test code
+		signature[64] -= byte(27)
 	} else {
 		signer = types.NewEIP155Signer(chainID)
 		signature[64] -= byte(chainID.Uint64()*2 + 35)

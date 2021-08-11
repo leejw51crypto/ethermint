@@ -142,14 +142,17 @@ ignored as it is implied from [from_key_or_address].`,
 
 			input2, _ := hexutil.Decode("0x")
 			input := hexutil.Bytes(input2)
+			fmt.Printf("%v %v\n", data, input)
 			sendarg := rpctypes.SendTxArgs{
 				From:     fromaddr,
 				To:       &toaddr,
 				Gas:      (*hexutil.Uint64)(&gas),
 				GasPrice: (*hexutil.Big)(big.NewInt(20000000)),
 				Value:    (*hexutil.Big)(big.NewInt(2)),
-				Data:     &data,
-				Input:    &input,
+				Data:     nil,
+				Input:    nil,
+				//Data:     &data,
+				//Input:    &input,
 			}
 			fmt.Printf("sendarg= %+v\n", sendarg)
 			txhash, err := SendTransactionEth(clientCtx, evmBackend, queryClient, sendarg)

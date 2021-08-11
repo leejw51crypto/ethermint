@@ -82,6 +82,8 @@ func SignMsg(msg *evmtypes.MsgEthereumTx, ethSigner ethtypes.Signer, keyringSign
 
 	// tx ------------------------------------------
 	tx := msg.AsTransaction()
+	txjsonsw, _ := tx.MarshalJSON()
+	fmt.Printf("txjsonsw= %s\n", string(txjsonsw[:]))
 	txHash := ethSigner.Hash(tx)
 
 	// sign ---------------------------------------------------
@@ -89,9 +91,11 @@ func SignMsg(msg *evmtypes.MsgEthereumTx, ethSigner ethtypes.Signer, keyringSign
 	addr := crypto.PubkeyToAddress(key.PublicKey)
 	fmt.Printf("addr %v\n", addr)
 	//chainid := big.NewInt(2)
+
 	chainid := ethSigner.ChainID()
-	//txfound, err := wallet0.SignTx(accounts[0], mytypes.NewTransaction(0, addr, new(big.Int), 0, new(big.Int), nil), chainid)
 	txfound, err := wallet0.SignTx(accounts[0], tx, chainid)
+	myassert(txfound != nil)
+	//txfound, err := wallet0.SignTx(accounts[0], tx, chainid)
 	txjson, _ := txfound.MarshalJSON()
 	fmt.Printf("tx json %v\n", string(txjson))
 	v2, r2, s2 := txfound.RawSignatureValues()
@@ -115,12 +119,16 @@ func SignMsg(msg *evmtypes.MsgEthereumTx, ethSigner ethtypes.Signer, keyringSign
 	myassert(len(r3) == 32)
 	myassert(len(s3) == 32)
 
+	// change
+	v3[0] -= byte(27)
+
 	hwsignature := append(r3, s3...)
 	hwsignature = append(hwsignature, v3...)
 	myassert(len(hwsignature) == 65)
 
 	fmt.Printf("## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n")
-	fmt.Printf("signature %d %+v\n", len(hwsignature), hwsignature)
+	fmt.Printf("hw signature %d %+v\n", len(hwsignature), hwsignature)
+
 	// order  r(32), s(32), v(1)
 	/*
 			signature = signature.substr(2); //remove 0x
@@ -142,7 +150,9 @@ func SignMsg(msg *evmtypes.MsgEthereumTx, ethSigner ethtypes.Signer, keyringSign
 		return err
 	}
 
-	tx, err = tx.WithSignature(ethSigner, sig)
+	// test code
+	//tx, err = tx.WithSignature(ethSigner, sig)
+	tx, err = tx.WithSignature(ethSigner, hwsignature)
 	if err != nil {
 		return err
 	}
@@ -332,7 +342,8 @@ func SendTransactionEth(
 	}
 
 	// TODO: get from chain config
-	signer := ethtypes.LatestSignerForChainID(args.ChainID.ToInt())
+	//signer := ethtypes.LatestSignerForChainID(args.ChainID.ToInt())
+	signer := ethtypes.LatestSignerForChainID(nil)
 
 	fmt.Printf("################################\n")
 
