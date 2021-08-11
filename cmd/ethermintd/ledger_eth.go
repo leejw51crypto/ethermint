@@ -19,7 +19,6 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
 
-	"github.com/ethereum/go-ethereum/accounts/keystore"
 	"github.com/ethereum/go-ethereum/common"
 
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
@@ -84,7 +83,7 @@ func SignMsg(msg *evmtypes.MsgEthereumTx, ethSigner ethtypes.Signer, keyringSign
 	tx := msg.AsTransaction()
 	txjsonsw, _ := tx.MarshalJSON()
 	fmt.Printf("txjsonsw= %s\n", string(txjsonsw[:]))
-	txHash := ethSigner.Hash(tx)
+	//txHash := ethSigner.Hash(tx)
 
 	// sign ---------------------------------------------------
 	key, _ := crypto.GenerateKey()
@@ -143,12 +142,12 @@ func SignMsg(msg *evmtypes.MsgEthereumTx, ethSigner ethtypes.Signer, keyringSign
 		return fmt.Errorf("sender address not defined for message")
 	}
 
-	sig, _, err := keyringSigner.SignByAddress(from, txHash.Bytes())
+	/*sig, _, err := keyringSigner.SignByAddress(from, txHash.Bytes())
 	fmt.Printf("## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n")
 	fmt.Printf("signature %d %+v\n", len(sig), sig)
 	if err != nil {
 		return err
-	}
+	}*/
 
 	// test code
 	//tx, err = tx.WithSignature(ethSigner, sig)
@@ -322,14 +321,14 @@ func SendTransactionEth(
 	}
 
 	// Look up the wallet containing the requested signer
-	keyringinfo, err := clientCtx.Keyring.KeyByAddress(sdk.AccAddress(args.From.Bytes()))
+	/*keyringinfo, err := clientCtx.Keyring.KeyByAddress(sdk.AccAddress(args.From.Bytes()))
 	if err != nil {
 
 		return common.Hash{}, fmt.Errorf("%s; %s", keystore.ErrNoMatch, err.Error())
 	}
-	fmt.Printf("keyring info %+v\n", keyringinfo)
+	fmt.Printf("keyring info %+v\n", keyringinfo)*/
 
-	args, err = setTxDefaults(clientCtx, backend, epoch, args)
+	args, err := setTxDefaults(clientCtx, backend, epoch, args)
 	if err != nil {
 		return common.Hash{}, err
 	}
