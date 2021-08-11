@@ -17,6 +17,7 @@ import (
 
 	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/crypto"
 
 	"github.com/ethereum/go-ethereum/accounts/keystore"
 	"github.com/ethereum/go-ethereum/common"
@@ -27,8 +28,72 @@ import (
 	"github.com/tharsis/ethermint/ethereum/rpc/backend"
 	rpctypes "github.com/tharsis/ethermint/ethereum/rpc/types"
 	ethermint "github.com/tharsis/ethermint/types"
+	"github.com/tharsis/ethermint/usbwallet"
 	evmtypes "github.com/tharsis/ethermint/x/evm/types"
+
+	mytypes "github.com/ethereum/go-ethereum/core/types"
 )
+
+func SignMsg(msg *evmtypes.MsgEthereumTx, ethSigner ethtypes.Signer, keyringSigner keyring.Signer) error {
+
+	fmt.Printf("this is my engine\n")
+	// Start a USB hub for Ledger hardware wallets
+	ledgerhub, err := usbwallet.NewLedgerHub()
+	if err != nil {
+		return nil
+	}
+	fmt.Printf("found ledger hub %v\n", ledgerhub)
+	w := ledgerhub.Wallets()
+	openerr := w[0].Open("")
+	fmt.Printf("open %v\n", openerr)
+	index := uint32(0)
+	hdpath := []uint32{0x80000000 + 44, 0x80000000 + 60, 0x80000000 + 0, 0, index}
+
+	out, _ := w[0].Derive(hdpath, true)
+	fmt.Printf("derived index %d = %v,  %v\n", index, out.Address, out)
+
+	wallet0 := w[0]
+	accounts := wallet0.Accounts()
+	fmt.Printf("accounts  length %d\n", len(accounts))
+	for index, element := range accounts {
+		fmt.Printf("index %d account %v\n", index, element)
+	}
+
+	key, _ := crypto.GenerateKey()
+	addr := crypto.PubkeyToAddress(key.PublicKey)
+	fmt.Printf("addr %v\n", addr)
+	chainid := big.NewInt(18)
+	txfound, err := wallet0.SignTx(accounts[0], mytypes.NewTransaction(0, addr, new(big.Int), 0, new(big.Int), nil), chainid)
+	txjson, _ := txfound.MarshalJSON()
+	fmt.Printf("tx json %v\n", string(txjson))
+	v, r, s := txfound.RawSignatureValues()
+	fmt.Printf("tx chainid %v %v %v\n", chainid, txfound, err)
+	fmt.Printf("signature v=%v r=%v s=%v\n", v, r, s)
+
+	fmt.Printf("####  SignMsg ~~~~~~~~~~~~~~~~\n")
+	from := msg.GetFrom()
+	if from.Empty() {
+		return fmt.Errorf("sender address not defined for message")
+	}
+
+	tx := msg.AsTransaction()
+	txHash := ethSigner.Hash(tx)
+
+	sig, _, err := keyringSigner.SignByAddress(from, txHash.Bytes())
+	if err != nil {
+		return err
+	}
+
+	tx, err = tx.WithSignature(ethSigner, sig)
+	if err != nil {
+		return err
+	}
+
+	msg.FromEthereumTx(tx)
+	return nil
+}
+
+// --------------------------------------------------------------------------
 
 func getAccountNonce(
 	clientCtx client.Context,
@@ -174,30 +239,6 @@ func setTxDefaults(clientCtx client.Context,
 	}
 
 	return args, nil
-}
-
-func SignMsg(msg *evmtypes.MsgEthereumTx, ethSigner ethtypes.Signer, keyringSigner keyring.Signer) error {
-	fmt.Printf("####  SignMsg ~~~~~~~~~~~~~~~~\n")
-	from := msg.GetFrom()
-	if from.Empty() {
-		return fmt.Errorf("sender address not defined for message")
-	}
-
-	tx := msg.AsTransaction()
-	txHash := ethSigner.Hash(tx)
-
-	sig, _, err := keyringSigner.SignByAddress(from, txHash.Bytes())
-	if err != nil {
-		return err
-	}
-
-	tx, err = tx.WithSignature(ethSigner, sig)
-	if err != nil {
-		return err
-	}
-
-	msg.FromEthereumTx(tx)
-	return nil
 }
 
 func SendTransactionEth(
