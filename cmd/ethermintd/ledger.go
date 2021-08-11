@@ -3,14 +3,16 @@ package main
 import (
 	"fmt"
 
+	"github.com/tharsis/ethermint/ethereum/rpc/backend"
 	"github.com/tharsis/ethermint/usbwallet"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
-	"github.com/cosmos/cosmos-sdk/client/tx"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/spf13/cobra"
+	"github.com/tendermint/tendermint/libs/log"
+	rpctypes "github.com/tharsis/ethermint/ethereum/rpc/types"
 )
 
 const (
@@ -99,11 +101,15 @@ ignored as it is implied from [from_key_or_address].`,
 			}
 
 			msg := types.NewMsgSend(clientCtx.GetFromAddress(), toAddr, coins)
+			fmt.Printf("msg =%v\n", msg)
 
-			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
-			//	txf := clienttx.NewFactoryCLI(clientCtx, cmd.Flags())
+			evmBackend := backend.NewEVMBackend(log.NewNopLogger(), clientCtx)
+			queryClient := rpctypes.NewQueryClient(clientCtx)
 
-			//	return LedgerBroadcastTx(clientCtx, txf, msg)
+			sendarg := rpctypes.SendTxArgs{}
+			txhash, err := SendTransactionEth(clientCtx, evmBackend, queryClient, sendarg)
+			fmt.Printf("txhash= %v\n", txhash)
+			return err
 		},
 	}
 	flags.AddTxFlagsToCmd(cmd)
