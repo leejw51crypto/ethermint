@@ -30,8 +30,6 @@ import (
 	ethermint "github.com/tharsis/ethermint/types"
 	"github.com/tharsis/ethermint/usbwallet"
 	evmtypes "github.com/tharsis/ethermint/x/evm/types"
-
-	mytypes "github.com/ethereum/go-ethereum/core/types"
 )
 
 func SignMsg(msg *evmtypes.MsgEthereumTx, ethSigner ethtypes.Signer, keyringSigner keyring.Signer) error {
@@ -59,11 +57,17 @@ func SignMsg(msg *evmtypes.MsgEthereumTx, ethSigner ethtypes.Signer, keyringSign
 		fmt.Printf("index %d account %v\n", index, element)
 	}
 
+	// tx ------------------------------------------
+	tx := msg.AsTransaction()
+	txHash := ethSigner.Hash(tx)
+
+	// sign ---------------------------------------------------
 	key, _ := crypto.GenerateKey()
 	addr := crypto.PubkeyToAddress(key.PublicKey)
 	fmt.Printf("addr %v\n", addr)
-	chainid := big.NewInt(18)
-	txfound, err := wallet0.SignTx(accounts[0], mytypes.NewTransaction(0, addr, new(big.Int), 0, new(big.Int), nil), chainid)
+	chainid := big.NewInt(2)
+	//txfound, err := wallet0.SignTx(accounts[0], mytypes.NewTransaction(0, addr, new(big.Int), 0, new(big.Int), nil), chainid)
+	txfound, err := wallet0.SignTx(accounts[0], tx, chainid)
 	txjson, _ := txfound.MarshalJSON()
 	fmt.Printf("tx json %v\n", string(txjson))
 	v, r, s := txfound.RawSignatureValues()
@@ -75,9 +79,6 @@ func SignMsg(msg *evmtypes.MsgEthereumTx, ethSigner ethtypes.Signer, keyringSign
 	if from.Empty() {
 		return fmt.Errorf("sender address not defined for message")
 	}
-
-	tx := msg.AsTransaction()
-	txHash := ethSigner.Hash(tx)
 
 	sig, _, err := keyringSigner.SignByAddress(from, txHash.Bytes())
 	if err != nil {
