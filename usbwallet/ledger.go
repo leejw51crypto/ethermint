@@ -28,6 +28,7 @@ import (
 	"io"
 	"math/big"
 
+	//"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -114,7 +115,7 @@ func (w *ledgerDriver) offline() bool {
 func (w *ledgerDriver) Open(device io.ReadWriter, passphrase string) error {
 	w.device, w.failure = device, nil
 
-	_, err := w.ledgerDerive(accounts.DefaultBaseDerivationPath)
+	_, _, err := w.ledgerDerive(accounts.DefaultBaseDerivationPath)
 	if err != nil {
 		// Ethereum app is not running or in browser mode, nothing more to do, return
 		if err == errLedgerReplyInvalidHeader {
@@ -148,7 +149,7 @@ func (w *ledgerDriver) Heartbeat() error {
 
 // Derive implements usbwallet.driver, sending a derivation request to the Ledger
 // and returning the Ethereum address located on that derivation path.
-func (w *ledgerDriver) Derive(path accounts.DerivationPath) (common.Address, error) {
+func (w *ledgerDriver) Derive(path accounts.DerivationPath) ([]byte, common.Address, error) {
 	return w.ledgerDerive(path)
 }
 
@@ -253,7 +254,9 @@ func (w *ledgerDriver) ledgerVersion() ([3]byte, error) {
 //   Ethereum address length | 1 byte
 //   Ethereum address        | 40 bytes hex ascii
 //   Chain code if requested | 32 bytes
-func (w *ledgerDriver) ledgerDerive(derivationPath []uint32) (common.Address, error) {
+
+// 65 bytes pubkey
+func (w *ledgerDriver) ledgerDerive(derivationPath []uint32) ([]byte, common.Address, error) {
 	// Flatten the derivation path into the Ledger request
 	path := make([]byte, 1+4*len(derivationPath))
 	path[0] = byte(len(derivationPath))
@@ -263,26 +266,30 @@ func (w *ledgerDriver) ledgerDerive(derivationPath []uint32) (common.Address, er
 	// Send the request and wait for the response
 	reply, err := w.ledgerExchange(ledgerOpRetrieveAddress, ledgerP1DirectlyFetchAddress, ledgerP2DiscardAddressChainCode, path)
 	if err != nil {
-		return common.Address{}, err
+		return make([]byte, 65, 65), common.Address{}, err
 	}
 	// Discard the public key, we don't need that for now
 	if len(reply) < 1 || len(reply) < 1+int(reply[0]) {
-		return common.Address{}, errors.New("reply lacks public key entry")
+		return make([]byte, 65, 65), common.Address{}, errors.New("reply lacks public key entry")
 	}
+	pubkeylength := int32(reply[0])
+	fmt.Printf("pubkey length %d\n", pubkeylength)
+	pubkey := reply[1 : 1+pubkeylength]
+	fmt.Printf("pubkey length %d  pubkey %s\n", len(pubkey), hexutil.Encode(pubkey))
 	reply = reply[1+int(reply[0]):]
 
 	// Extract the Ethereum hex address string
 	if len(reply) < 1 || len(reply) < 1+int(reply[0]) {
-		return common.Address{}, errors.New("reply lacks address entry")
+		return make([]byte, 65, 65), common.Address{}, errors.New("reply lacks address entry")
 	}
 	hexstr := reply[1 : 1+int(reply[0])]
 
 	// Decode the hex sting into an Ethereum address and return
 	var address common.Address
 	if _, err = hex.Decode(address[:], hexstr); err != nil {
-		return common.Address{}, err
+		return make([]byte, 65, 65), common.Address{}, err
 	}
-	return address, nil
+	return pubkey, address, nil
 }
 
 // ledgerSign sends the transaction to the Ledger wallet, and waits for the user

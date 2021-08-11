@@ -23,6 +23,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	//"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/ethereum/go-ethereum/log"
@@ -53,7 +54,7 @@ type Hub struct {
 	makeDriver func(log.Logger) driver // Factory method to construct a vendor specific driver
 
 	refreshed   time.Time               // Time instance when the list of wallets was last refreshed
-	wallets     []accounts.Wallet       // List of USB wallet devices currently tracking
+	wallets     []Wallet                // List of USB wallet devices currently tracking
 	updateFeed  event.Feed              // Event feed to notify wallet additions/removals
 	updateScope event.SubscriptionScope // Subscription scope tracking current live listeners
 	updating    bool                    // Whether the event notification loop is running
@@ -117,14 +118,14 @@ func newHub(scheme string, vendorID uint16, productIDs []uint16, usageID uint16,
 
 // Wallets implements accounts.Backend, returning all the currently tracked USB
 // devices that appear to be hardware wallets.
-func (hub *Hub) Wallets() []accounts.Wallet {
+func (hub *Hub) Wallets() []Wallet {
 	// Make sure the list of wallets is up to date
 	hub.refreshWallets()
 
 	hub.stateLock.RLock()
 	defer hub.stateLock.RUnlock()
 
-	cpy := make([]accounts.Wallet, len(hub.wallets))
+	cpy := make([]Wallet, len(hub.wallets))
 	copy(cpy, hub.wallets)
 	return cpy
 }
@@ -190,8 +191,8 @@ func (hub *Hub) refreshWallets() {
 	hub.stateLock.Lock()
 
 	var (
-		wallets = make([]accounts.Wallet, 0, len(devices))
-		events  []accounts.WalletEvent
+		wallets = make([]Wallet, 0, len(devices))
+		events  []WalletEvent
 	)
 
 	for _, device := range devices {
@@ -205,7 +206,7 @@ func (hub *Hub) refreshWallets() {
 				break
 			}
 			// Drop the stale and failed devices
-			events = append(events, accounts.WalletEvent{Wallet: hub.wallets[0], Kind: accounts.WalletDropped})
+			events = append(events, WalletEvent{Wallet: hub.wallets[0], Kind: WalletDropped})
 			hub.wallets = hub.wallets[1:]
 		}
 		// If there are no more wallets or the device is before the next, wrap new wallet
@@ -213,7 +214,7 @@ func (hub *Hub) refreshWallets() {
 			logger := log.New("url", url)
 			wallet := &wallet{hub: hub, driver: hub.makeDriver(logger), url: &url, info: device, log: logger}
 
-			events = append(events, accounts.WalletEvent{Wallet: wallet, Kind: accounts.WalletArrived})
+			events = append(events, WalletEvent{Wallet: wallet, Kind: WalletArrived})
 			wallets = append(wallets, wallet)
 			continue
 		}
@@ -226,7 +227,7 @@ func (hub *Hub) refreshWallets() {
 	}
 	// Drop any leftover wallets and set the new batch
 	for _, wallet := range hub.wallets {
-		events = append(events, accounts.WalletEvent{Wallet: wallet, Kind: accounts.WalletDropped})
+		events = append(events, WalletEvent{Wallet: wallet, Kind: WalletDropped})
 	}
 	hub.refreshed = time.Now()
 	hub.wallets = wallets

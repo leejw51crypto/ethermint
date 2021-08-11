@@ -172,7 +172,7 @@ func (w *trezorDriver) Heartbeat() error {
 
 // Derive implements usbwallet.driver, sending a derivation request to the Trezor
 // and returning the Ethereum address located on that derivation path.
-func (w *trezorDriver) Derive(path accounts.DerivationPath) (common.Address, error) {
+func (w *trezorDriver) Derive(path accounts.DerivationPath) ([]byte, common.Address, error) {
 	return w.trezorDerive(path)
 }
 
@@ -191,18 +191,18 @@ func (w *trezorDriver) SignTypedMessage(path accounts.DerivationPath, domainHash
 
 // trezorDerive sends a derivation request to the Trezor device and returns the
 // Ethereum address located on that path.
-func (w *trezorDriver) trezorDerive(derivationPath []uint32) (common.Address, error) {
+func (w *trezorDriver) trezorDerive(derivationPath []uint32) ([]byte, common.Address, error) {
 	address := new(trezor.EthereumAddress)
 	if _, err := w.trezorExchange(&trezor.EthereumGetAddress{AddressN: derivationPath}, address); err != nil {
-		return common.Address{}, err
+		return make([]byte, 65, 65), common.Address{}, err
 	}
 	if addr := address.GetAddressBin(); len(addr) > 0 { // Older firmwares use binary fomats
-		return common.BytesToAddress(addr), nil
+		return make([]byte, 65, 65), common.BytesToAddress(addr), nil
 	}
 	if addr := address.GetAddressHex(); len(addr) > 0 { // Newer firmwares use hexadecimal fomats
-		return common.HexToAddress(addr), nil
+		return make([]byte, 65, 65), common.HexToAddress(addr), nil
 	}
-	return common.Address{}, errors.New("missing derived address")
+	return make([]byte, 65, 65), common.Address{}, errors.New("missing derived address")
 }
 
 // trezorSign sends the transaction to the Trezor wallet, and waits for the user

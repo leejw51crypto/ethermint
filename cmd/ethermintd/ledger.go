@@ -42,7 +42,7 @@ func runAddCmd(cmd *cobra.Command, _ []string) error {
 
 	// bip44, coin type, account, change ,index
 	hdpath := []uint32{0x80000000 + 44, 0x80000000 + 60, 0x80000000 + 0, 0, index}
-	out, _ := w[0].Derive(hdpath, true)
+	out, _ := wallet0.Derive(hdpath, true)
 	fmt.Printf("Ledger Address Index= %d   Address= %s\n", index, out.Address.Hex())
 	closeerr := wallet0.Close()
 	if closeerr != nil {
