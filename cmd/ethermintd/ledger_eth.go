@@ -32,6 +32,12 @@ import (
 	evmtypes "github.com/tharsis/ethermint/x/evm/types"
 )
 
+func myassert(check bool) {
+	if !check {
+		panic("")
+	}
+}
+
 func SignMsg(msg *evmtypes.MsgEthereumTx, ethSigner ethtypes.Signer, keyringSigner keyring.Signer) error {
 
 	fmt.Printf("this is my engine\n")
@@ -71,9 +77,34 @@ func SignMsg(msg *evmtypes.MsgEthereumTx, ethSigner ethtypes.Signer, keyringSign
 	txfound, err := wallet0.SignTx(accounts[0], tx, chainid)
 	txjson, _ := txfound.MarshalJSON()
 	fmt.Printf("tx json %v\n", string(txjson))
-	v, r, s := txfound.RawSignatureValues()
+	v2, r2, s2 := txfound.RawSignatureValues()
+	v := hexutil.EncodeBig(v2)
+	r := hexutil.EncodeBig(r2)
+	s := hexutil.EncodeBig(s2)
+
+	v3, _ := hexutil.Decode(v)
+
+	r3, _ := hexutil.Decode(r)
+
+	s3, _ := hexutil.Decode(s)
+	myassert(len(v3) == 1)
+	myassert(len(r3) == 32)
+	myassert(len(s3) == 32)
+	hwsignature := append(r3, s3...)
+	hwsignature = append(hwsignature, v3...)
+	myassert(len(hwsignature) == 65)
+
 	fmt.Printf("tx chainid %v %v %v\n", chainid, txfound, err)
+
 	fmt.Printf("signature v=%v r=%v s=%v\n", v, r, s)
+
+	// order  r(32), s(32), v(1)
+	/*
+			signature = signature.substr(2); //remove 0x
+		const r = '0x' + signature.slice(0, 64)
+		const s = '0x' + signature.slice(64, 128)
+		const v = '0x' + signature.slice(128, 130)
+	*/
 
 	fmt.Printf("####  SignMsg ~~~~~~~~~~~~~~~~\n")
 	from := msg.GetFrom()
@@ -82,6 +113,8 @@ func SignMsg(msg *evmtypes.MsgEthereumTx, ethSigner ethtypes.Signer, keyringSign
 	}
 
 	sig, _, err := keyringSigner.SignByAddress(from, txHash.Bytes())
+	fmt.Printf("## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n")
+	fmt.Printf("signature %d %+v\n", len(sig), sig)
 	if err != nil {
 		return err
 	}
