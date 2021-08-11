@@ -38,6 +38,22 @@ func myassert(check bool) {
 	}
 }
 
+func mypadding(src []byte, dst []byte) {
+	n := len(dst)
+
+	for i := 0; i < n; i++ {
+		dst[i] = 0
+	}
+
+	fmt.Printf("before src %v dst %v\n", src, dst)
+	m := len(src)
+	for i := 0; i < m; i++ {
+		dst[n-1-i] = src[m-1-i]
+	}
+
+	fmt.Printf("after src %v dst %v\n", src, dst)
+}
+
 func SignMsg(msg *evmtypes.MsgEthereumTx, ethSigner ethtypes.Signer, keyringSigner keyring.Signer) error {
 
 	fmt.Printf("this is my engine\n")
@@ -72,7 +88,8 @@ func SignMsg(msg *evmtypes.MsgEthereumTx, ethSigner ethtypes.Signer, keyringSign
 	key, _ := crypto.GenerateKey()
 	addr := crypto.PubkeyToAddress(key.PublicKey)
 	fmt.Printf("addr %v\n", addr)
-	chainid := big.NewInt(2)
+	//chainid := big.NewInt(2)
+	chainid := ethSigner.ChainID()
 	//txfound, err := wallet0.SignTx(accounts[0], mytypes.NewTransaction(0, addr, new(big.Int), 0, new(big.Int), nil), chainid)
 	txfound, err := wallet0.SignTx(accounts[0], tx, chainid)
 	txjson, _ := txfound.MarshalJSON()
@@ -84,20 +101,26 @@ func SignMsg(msg *evmtypes.MsgEthereumTx, ethSigner ethtypes.Signer, keyringSign
 
 	v3, _ := hexutil.Decode(v)
 
-	r3, _ := hexutil.Decode(r)
+	// pading
+	r3a, _ := hexutil.Decode(r)
+	s3a, _ := hexutil.Decode(s)
 
-	s3, _ := hexutil.Decode(s)
+	// test code
+	r3 := make([]byte, 32, 32)
+	s3 := make([]byte, 32, 32)
+	mypadding(r3a, r3)
+	mypadding(s3a, s3)
+
 	myassert(len(v3) == 1)
 	myassert(len(r3) == 32)
 	myassert(len(s3) == 32)
+
 	hwsignature := append(r3, s3...)
 	hwsignature = append(hwsignature, v3...)
 	myassert(len(hwsignature) == 65)
 
-	fmt.Printf("tx chainid %v %v %v\n", chainid, txfound, err)
-
-	fmt.Printf("signature v=%v r=%v s=%v\n", v, r, s)
-
+	fmt.Printf("## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n")
+	fmt.Printf("signature %d %+v\n", len(hwsignature), hwsignature)
 	// order  r(32), s(32), v(1)
 	/*
 			signature = signature.substr(2); //remove 0x
