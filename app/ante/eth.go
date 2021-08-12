@@ -140,6 +140,7 @@ func (avd EthAccountVerificationDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx
 				"sender address should have been in the tx field from the previous AnteHandle call",
 			)
 		}
+		v3, r3, s3 := txData.GetRawSignatureValues()
 
 		// check whether the sender address is EOA
 		fromAddr := common.BytesToAddress(from)
@@ -163,7 +164,7 @@ func (avd EthAccountVerificationDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx
 			return ctx, stacktrace.Propagate(
 				sdkerrors.Wrapf(
 					sdkerrors.ErrInsufficientFunds,
-					"sender balance < tx cost (%s < %s%s)", balance, txData.Cost(), evmDenom,
+					"sender balance < tx cost from %s (%s < %s%s) v %v r %v s%v", from.String(), balance, txData.Cost(), evmDenom, v3, r3, s3,
 				),
 				"sender should have had enough funds to pay for tx cost = fee + amount (%s = %s + %s)", cost, txData.Fee(), txData.GetValue(),
 			)
