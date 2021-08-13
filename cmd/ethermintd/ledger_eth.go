@@ -118,9 +118,6 @@ func SignMsg(msg *evmtypes.MsgEthereumTx, ethSigner ethtypes.Signer, keyringSign
 	myassert(len(r3) == 32)
 	myassert(len(s3) == 32)
 
-	// change
-	v3[0] -= byte(27)
-
 	hwsignature := append(r3, s3...)
 	hwsignature = append(hwsignature, v3...)
 	myassert(len(hwsignature) == 65)
@@ -151,6 +148,14 @@ func SignMsg(msg *evmtypes.MsgEthereumTx, ethSigner ethtypes.Signer, keyringSign
 
 	// test code
 	//tx, err = tx.WithSignature(ethSigner, sig)
+
+	// convert v 0, or 1
+	fmt.Printf("old sig=%v\n", hwsignature)
+	oldv := hwsignature[64]
+	newv := oldv - byte(2*2+35)
+	hwsignature[64] = newv
+	fmt.Printf("new sig=%v\n", hwsignature)
+
 	tx, err = tx.WithSignature(ethSigner, hwsignature)
 	if err != nil {
 		return err
@@ -342,7 +347,8 @@ func SendTransactionEth(
 
 	// TODO: get from chain config
 	//signer := ethtypes.LatestSignerForChainID(args.ChainID.ToInt())
-	signer := ethtypes.LatestSignerForChainID(nil)
+	//signer := ethtypes.LatestSignerForChainID(nil)
+	signer := ethtypes.NewEIP2930Signer(args.ChainID.ToInt())
 
 	fmt.Printf("################################\n")
 

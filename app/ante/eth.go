@@ -1,6 +1,7 @@
 package ante
 
 import (
+	"fmt"
 	"math/big"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -64,8 +65,11 @@ func (esvd EthSigVerificationDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, s
 	blockNum := big.NewInt(ctx.BlockHeight())
 	signer := ethtypes.MakeSigner(ethCfg, blockNum)
 
+	fmt.Printf("signer %v  block %v  chaind %v \n", signer, blockNum, signer.ChainID())
+
 	msg := tx.GetMsgs()[0]
 	msgEthTx, ok := msg.(*evmtypes.MsgEthereumTx)
+	fmt.Printf("tx = %v\n", msgEthTx)
 	if !ok {
 		return ctx, stacktrace.Propagate(
 			sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "invalid transaction type %T, expected %T", tx, &evmtypes.MsgEthereumTx{}),
@@ -73,7 +77,9 @@ func (esvd EthSigVerificationDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, s
 		)
 	}
 
-	sender, err := signer.Sender(msgEthTx.AsTransaction())
+	tx2 := msgEthTx.AsTransaction()
+	fmt.Printf("tx2 = %v\n", tx2)
+	sender, err := signer.Sender(tx2)
 	if err != nil {
 		return ctx, stacktrace.Propagate(
 			sdkerrors.Wrap(sdkerrors.ErrorInvalidSigner, err.Error()),

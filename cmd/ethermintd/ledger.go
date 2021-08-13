@@ -11,8 +11,6 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/spf13/cobra"
 	"github.com/tendermint/tendermint/libs/log"
 	rpctypes "github.com/tharsis/ethermint/ethereum/rpc/types"
@@ -93,18 +91,20 @@ ignored as it is implied from [from_key_or_address].`,
 			if err != nil {
 				return err
 			}
-			toAddr, err := sdk.AccAddressFromBech32(args[1])
-			if err != nil {
-				return err
-			}
+			/*
+				toAddr, err := sdk.AccAddressFromBech32(args[1])
+				if err != nil {
+					return err
+				}
 
-			coins, err := sdk.ParseCoinsNormalized(args[2])
-			if err != nil {
-				return err
-			}
+				coins, err := sdk.ParseCoinsNormalized(args[2])
+				if err != nil {
+					return err
+				}
+			*/
 
-			msg := types.NewMsgSend(clientCtx.GetFromAddress(), toAddr, coins)
-			fmt.Printf("msg =%v\n", msg)
+			//msg := types.NewMsgSend(clientCtx.GetFromAddress(), toAddr, coins)
+			//fmt.Printf("msg =%v\n", msg)
 
 			evmBackend := backend.NewEVMBackend(log.NewNopLogger(), clientCtx)
 			queryClient := rpctypes.NewQueryClient(clientCtx)
