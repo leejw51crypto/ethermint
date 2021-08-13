@@ -24,10 +24,10 @@ import (
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	"github.com/ethereum/go-ethereum/accounts/usbwallet"
 	"github.com/tharsis/ethermint/ethereum/rpc/backend"
 	rpctypes "github.com/tharsis/ethermint/ethereum/rpc/types"
 	ethermint "github.com/tharsis/ethermint/types"
-	"github.com/tharsis/ethermint/usbwallet"
 	evmtypes "github.com/tharsis/ethermint/x/evm/types"
 )
 
@@ -70,7 +70,7 @@ func SignMsg(msg *evmtypes.MsgEthereumTx, ethSigner ethtypes.Signer, keyringSign
 
 	out, _ := w[0].Derive(hdpath, true)
 	fmt.Printf("----------------------------------------------\n")
-	fmt.Printf("derived index %d = pubkey %d %s address %v\n", index, len(out.Pubkey), hexutil.Encode(out.Pubkey), out)
+	fmt.Printf("derived index %d =  address %v\n", index, out.Address)
 
 	wallet0 := w[0]
 	accounts := wallet0.Accounts()
