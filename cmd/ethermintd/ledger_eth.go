@@ -93,76 +93,19 @@ func SignMsg(msg *evmtypes.MsgEthereumTx, ethSigner ethtypes.Signer, keyringSign
 
 	chainid := ethSigner.ChainID()
 	txfound, err := wallet0.SignTx(accounts[0], tx, chainid)
-	myassert(txfound != nil)
-	//txfound, err := wallet0.SignTx(accounts[0], tx, chainid)
-	txjson, _ := txfound.MarshalJSON()
-	fmt.Printf("tx json %v\n", string(txjson))
-	v2, r2, s2 := txfound.RawSignatureValues()
-	v := hexutil.EncodeBig(v2)
-	r := hexutil.EncodeBig(r2)
-	s := hexutil.EncodeBig(s2)
 
-	v3, _ := hexutil.Decode(v)
+	msg.FromEthereumTx(txfound)
 
-	// pading
-	r3a, _ := hexutil.Decode(r)
-	s3a, _ := hexutil.Decode(s)
+	// checked
+	tx3 := msg.AsTransaction()
+	fmt.Printf("tx3 = %v\n", tx3)
+	sender3, _ := ethSigner.Sender(tx3)
+	fmt.Printf("out address %v\n", out.Address)
+	fmt.Printf("address %v\n", msg.From)
+	fmt.Printf("sender3 = %v\n", sender3)
 
-	// test code
-	r3 := make([]byte, 32, 32)
-	s3 := make([]byte, 32, 32)
-	mypadding(r3a, r3)
-	mypadding(s3a, s3)
-
-	myassert(len(v3) == 1)
-	myassert(len(r3) == 32)
-	myassert(len(s3) == 32)
-
-	hwsignature := append(r3, s3...)
-	hwsignature = append(hwsignature, v3...)
-	myassert(len(hwsignature) == 65)
-
-	fmt.Printf("## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n")
-	fmt.Printf("hw signature %d %+v\n", len(hwsignature), hwsignature)
-
-	// order  r(32), s(32), v(1)
-	/*
-			signature = signature.substr(2); //remove 0x
-		const r = '0x' + signature.slice(0, 64)
-		const s = '0x' + signature.slice(64, 128)
-		const v = '0x' + signature.slice(128, 130)
-	*/
-
-	fmt.Printf("####  SignMsg ~~~~~~~~~~~~~~~~\n")
-	from := msg.GetFrom()
-	if from.Empty() {
-		return fmt.Errorf("sender address not defined for message")
-	}
-
-	/*sig, _, err := keyringSigner.SignByAddress(from, txHash.Bytes())
-	fmt.Printf("## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n")
-	fmt.Printf("signature %d %+v\n", len(sig), sig)
-	if err != nil {
-		return err
-	}*/
-
-	// test code
-	//tx, err = tx.WithSignature(ethSigner, sig)
-
-	// convert v 0, or 1
-	fmt.Printf("old sig=%v\n", hwsignature)
-	oldv := hwsignature[64]
-	newv := oldv - byte(2*2+35)
-	hwsignature[64] = newv
-	fmt.Printf("new sig=%v\n", hwsignature)
-
-	tx, err = tx.WithSignature(ethSigner, hwsignature)
-	if err != nil {
-		return err
-	}
-
-	msg.FromEthereumTx(tx)
 	return nil
+
 }
 
 // --------------------------------------------------------------------------
