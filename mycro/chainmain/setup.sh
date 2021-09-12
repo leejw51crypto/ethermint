@@ -9,14 +9,14 @@ export LOGLEVEL="info"
 export TRACE="--trace"
 #export TRACE=""
 #export CHAINHOME=$HOME/.$CHAINID
-export CHAINHOME=/run/user/1000/pytest-of-leejw51/pytest-9/chainmain0/chainmain-1/node0
+export CHAINHOME=/run/user/1000/pytest-of-leejw51/pytest-0/chainmain0/chainmain-1/node0
 
 export ETHCONFIG=$CHAINHOME/config/config.toml
 export GENESIS=$CHAINHOME/config/genesis.json
 export TMPGENESIS=$CHAINHOME/config/tmp_genesis.json
 export APPCONFIG=$CHAINHOME/config/app.toml
 export CLIENTCONFIG=$CHAINHOME/config/client.toml
-export DENOM=aapple
+export DENOM=basecro
 #echo $GENESIS
 #echo $TMPGENESIS
 #echo $ETHCONFIG

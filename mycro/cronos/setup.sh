@@ -8,7 +8,7 @@ export LOGLEVEL="info"
 # to trace evm
 export TRACE="--trace"
 #export TRACE=""
-export CHAINHOME=/run/user/1000/pytest-of-leejw51/pytest-10/cronos0/cronos_777-1/node0
+export CHAINHOME=/run/user/1000/pytest-of-leejw51/pytest-21/cronos0/cronos_777-1/node0
 
 export ETHCONFIG=$CHAINHOME/config/config.toml
 export GENESIS=$CHAINHOME/config/genesis.json
@@ -29,7 +29,7 @@ export ETHPORT0=8535
 export ETHPORT1=8536
 export COSMOSPORT0=26646
 export COSMOSPORT1=26647
-export CLI=ethermintd
+export CLI=cronosd
 export NODE=tcp://127.0.0.1:26707
 $CLI keys list --keyring-backend $KEYRING --home $CHAINHOME
 #echo 'HOME='$CHAINHOME
