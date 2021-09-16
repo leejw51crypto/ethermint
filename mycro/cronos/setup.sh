@@ -8,7 +8,7 @@ export LOGLEVEL="info"
 # to trace evm
 export TRACE="--trace"
 #export TRACE=""
-export CHAINHOME=/run/user/1000/pytest-of-leejw51/pytest-21/cronos0/cronos_777-1/node0
+export CHAINHOME=/run/user/1000/pytest-of-leejw51/pytest-33/cronos0/cronos_777-1/node0
 
 export ETHCONFIG=$CHAINHOME/config/config.toml
 export GENESIS=$CHAINHOME/config/genesis.json

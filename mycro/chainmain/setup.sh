@@ -9,7 +9,7 @@ export LOGLEVEL="info"
 export TRACE="--trace"
 #export TRACE=""
 #export CHAINHOME=$HOME/.$CHAINID
-export CHAINHOME=/run/user/1000/pytest-of-leejw51/pytest-0/chainmain0/chainmain-1/node0
+export CHAINHOME=/run/user/1000/pytest-of-leejw51/pytest-26/chainmain0/chainmain-1/node0
 
 export ETHCONFIG=$CHAINHOME/config/config.toml
 export GENESIS=$CHAINHOME/config/genesis.json
@@ -45,3 +45,4 @@ export K1=$($CLI keys list --keyring-backend $KEYRING --home $CHAINHOME | yq eva
 
 export S1=cro1u08u5dvtnpmlpdq333uj9tcj75yceggszxpnsy
 export S2=cro1apdh4yc2lnpephevc6lmpvkyv6s5cjh652n6e4
+export E1=$($CLI query ibc-transfer escrow-address  transfer channel-0  --node $NODE)
