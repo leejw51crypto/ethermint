@@ -13,6 +13,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/server"
 	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
 	"github.com/ethereum/go-ethereum/accounts/keystore"
+	"github.com/ethereum/go-ethereum/eth/gasprice"
 	"github.com/ethereum/go-ethereum/params"
 	tmrpctypes "github.com/tendermint/tendermint/rpc/core/types"
 
@@ -86,6 +87,7 @@ type EVMBackend struct {
 	logger      log.Logger
 	chainID     *big.Int
 	cfg         config.Config
+	gpo         *gasprice.Oracle
 }
 
 // NewEVMBackend creates a new EVMBackend instance
@@ -97,14 +99,21 @@ func NewEVMBackend(ctx *server.Context, logger log.Logger, clientCtx client.Cont
 
 	appConf := config.GetConfig(ctx.Viper)
 
-	return &EVMBackend{
+	ret := &EVMBackend{
 		ctx:         context.Background(),
 		clientCtx:   clientCtx,
 		queryClient: types.NewQueryClient(clientCtx),
 		logger:      logger.With("module", "evm-backend"),
 		chainID:     chainID,
 		cfg:         appConf,
+		gpo:         nil,
 	}
+
+	param := gasprice.Config{}
+	gpo := gasprice.NewOracle(nil, param)
+	ret.gpo = gpo
+
+	return ret
 }
 
 // BlockNumber returns the current block number in abci app state.
