@@ -81,13 +81,14 @@ var bAttributeKeyEthereumBloom = []byte(evmtypes.AttributeKeyEthereumBloom)
 
 // EVMBackend implements the Backend interface
 type EVMBackend struct {
-	ctx         context.Context
-	clientCtx   client.Context
-	queryClient *types.QueryClient // gRPC query client
-	logger      log.Logger
-	chainID     *big.Int
-	cfg         config.Config
-	gpo         *gasprice.Oracle
+	ctx           context.Context
+	clientCtx     client.Context
+	queryClient   *types.QueryClient // gRPC query client
+	logger        log.Logger
+	chainID       *big.Int
+	cfg           config.Config
+	gpo           *gasprice.Oracle
+	oracleBackend *OracleBackend
 }
 
 // NewEVMBackend creates a new EVMBackend instance
@@ -99,19 +100,22 @@ func NewEVMBackend(ctx *server.Context, logger log.Logger, clientCtx client.Cont
 
 	appConf := config.GetConfig(ctx.Viper)
 
+	oracleBackend := &OracleBackend{}
 	ret := &EVMBackend{
-		ctx:         context.Background(),
-		clientCtx:   clientCtx,
-		queryClient: types.NewQueryClient(clientCtx),
-		logger:      logger.With("module", "evm-backend"),
-		chainID:     chainID,
-		cfg:         appConf,
-		gpo:         nil,
+		ctx:           context.Background(),
+		clientCtx:     clientCtx,
+		queryClient:   types.NewQueryClient(clientCtx),
+		logger:        logger.With("module", "evm-backend"),
+		chainID:       chainID,
+		cfg:           appConf,
+		gpo:           nil,
+		oracleBackend: nil,
 	}
 
 	param := gasprice.Config{}
-	gpo := gasprice.NewOracle(nil, param)
+	gpo := gasprice.NewOracle(oracleBackend, param)
 	ret.gpo = gpo
+	ret.oracleBackend = oracleBackend
 
 	return ret
 }
