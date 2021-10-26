@@ -1,7 +1,6 @@
 package backend
 
 import (
-	"fmt"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -53,6 +52,6 @@ func (e *EVMBackend) FeeHistory(blockCount rpc.DecimalOrHex, lastBlock rpc.Block
 		Reward:       Reward,
 		BaseFee:      BaseFee,
 		GasUsedRatio: GasUsedRatio}
-
-	return &feeHistory, fmt.Errorf("eth_feeHistory not implemented")
+	return &feeHistory, nil
+	//return &feeHistory, fmt.Errorf("eth_feeHistory not implemented")
 }
