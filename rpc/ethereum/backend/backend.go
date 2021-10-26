@@ -15,6 +15,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/keystore"
 	"github.com/ethereum/go-ethereum/eth/gasprice"
 	"github.com/ethereum/go-ethereum/params"
+	"github.com/ethereum/go-ethereum/rpc"
 	tmrpctypes "github.com/tendermint/tendermint/rpc/core/types"
 
 	"google.golang.org/grpc"
@@ -33,6 +34,7 @@ import (
 
 	"github.com/tharsis/ethermint/rpc/ethereum/namespaces/eth/filters"
 	"github.com/tharsis/ethermint/rpc/ethereum/types"
+	rpctypes "github.com/tharsis/ethermint/rpc/ethereum/types"
 	"github.com/tharsis/ethermint/server/config"
 	ethermint "github.com/tharsis/ethermint/types"
 	evmtypes "github.com/tharsis/ethermint/x/evm/types"
@@ -42,6 +44,9 @@ import (
 // Backend implements the functionality shared within namespaces.
 // Implemented by EVMBackend.
 type Backend interface {
+	// Fee API
+	FeeHistory(blockCount rpc.DecimalOrHex, lastBlock rpc.BlockNumber, rewardPercentiles []float64) (*rpctypes.FeeHistoryResult, error)
+
 	// General Ethereum API
 	RPCGasCap() uint64 // global gas cap for eth_call over rpc: DoS protection
 	RPCMinGasPrice() int64
