@@ -233,6 +233,15 @@ func (e *PublicAPI) FeeHistory(blockCount rpc.DecimalOrHex, lastBlock rpc.BlockN
 		Reward[i] = make([]*hexutil.Big, rewardcount)
 	}
 
+	// fetch block
+	for blockid := blockstart; blockid < blockend; blockid++ {
+		_, err := e.backend.GetBlockByNumber(rpctypes.BlockNumber(blockid), true)
+		if err != nil {
+			return nil, err
+		}
+
+	}
+
 	var BaseFee []*hexutil.Big = make([]*hexutil.Big, blockcount)
 	var GasUsedRatio []float64 = make([]float64, blockcount)
 
