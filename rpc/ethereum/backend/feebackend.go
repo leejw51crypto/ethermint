@@ -32,8 +32,12 @@ func (e *EVMBackend) processBlock(
 	// set basefee
 	onefeehistory.BaseFee = basefee
 
-	// set gasused
-	onefeehistory.GasUsed = 0.2
+	// set gasused ratio
+	gasLimit := (*block)["gasLimit"].(int64)
+	gasUsed := (*block)["gasUsed"].(int64)
+	gasusedratio := float64(gasUsed) / float64(gasLimit)
+
+	onefeehistory.GasUsed = gasusedratio
 
 	var rewardcount = len(rewardPercentiles)
 	onefeehistory.Reward = make([]*big.Int, rewardcount)
@@ -57,6 +61,7 @@ func (e *EVMBackend) processBlock(
 			}
 
 			tx := ethMsg.AsTransaction()
+
 			hash := tx.Hash()
 			fmt.Printf("tx=%v hash=%v", tx, hash)
 
