@@ -1,16 +1,38 @@
 package backend
 
 import (
+	"encoding/json"
+	"fmt"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/rpc"
+	tmrpctypes "github.com/tendermint/tendermint/rpc/core/types"
 	rpctypes "github.com/tharsis/ethermint/rpc/ethereum/types"
+	evmtypes "github.com/tharsis/ethermint/x/evm/types"
 )
 
-func (e *EVMBackend) processBlock(block *map[string]interface{}, rewardPercentiles []float64, onefeehistory *OneFeeHistory) {
-	e.logger.Debug("processBlock#################")
-	onefeehistory.BaseFee = big.NewInt(100)
+func (e *EVMBackend) processBlock(
+	tendermintblock *tmrpctypes.ResultBlock,
+	block *map[string]interface{}, rewardPercentiles []float64, onefeehistory *OneFeeHistory) error {
+
+	height := tendermintblock.Block.Height
+	e.logger.Debug("processBlock #################")
+	e.logger.Debug("height ", height, "   ###################")
+	json, jsonerr := json.Marshal(block)
+	if jsonerr != nil {
+		return jsonerr
+	}
+	e.logger.Debug(string(json))
+	basefee, err := e.BaseFee(height)
+	if err != nil {
+		return err
+	}
+
+	// set basefee
+	onefeehistory.BaseFee = basefee
+
+	// set gasused
 	onefeehistory.GasUsed = 0.2
 
 	var rewardcount = len(rewardPercentiles)
@@ -18,6 +40,30 @@ func (e *EVMBackend) processBlock(block *map[string]interface{}, rewardPercentil
 	for i := 0; i < rewardcount; i++ {
 		onefeehistory.Reward[i] = big.NewInt(2000)
 	}
+
+	// check txs
+	txs := tendermintblock.Block.Txs
+	for _, txBz := range txs {
+		tx, err := e.clientCtx.TxConfig.TxDecoder()(txBz)
+		if err != nil {
+			e.logger.Debug("failed to decode transaction in block", "height", height, "error", err.Error())
+			continue
+		}
+
+		for _, msg := range tx.GetMsgs() {
+			ethMsg, ok := msg.(*evmtypes.MsgEthereumTx)
+			if !ok {
+				continue
+			}
+
+			tx := ethMsg.AsTransaction()
+			hash := tx.Hash()
+			fmt.Printf("tx=%v hash=%v", tx, hash)
+
+		}
+	}
+
+	return nil
 }
 
 type OneFeeHistory struct {
@@ -56,11 +102,21 @@ func (e *EVMBackend) FeeHistory(blockCount rpc.DecimalOrHex, lastBlock rpc.Block
 	for blockid := blockstart; blockid < blockend; blockid++ {
 		index := int32(blockid - blockstart)
 		foundblock, err := e.GetBlockByNumber(rpctypes.BlockNumber(blockid), true)
+
 		if err != nil {
 			return nil, err
 		}
+
+		tendermintblock, tenderminterr := e.GetTendermintBlockByNumber(rpctypes.BlockNumber(blockid))
+		if tenderminterr != nil {
+			return nil, err
+		}
+
 		var onefeehistory OneFeeHistory = OneFeeHistory{}
-		e.processBlock(&foundblock, rewardPercentiles, &onefeehistory)
+		processerr := e.processBlock(tendermintblock, &foundblock, rewardPercentiles, &onefeehistory)
+		if processerr != nil {
+			return nil, processerr
+		}
 
 		// iterate
 		BaseFee[index] = (*hexutil.Big)(onefeehistory.BaseFee)
