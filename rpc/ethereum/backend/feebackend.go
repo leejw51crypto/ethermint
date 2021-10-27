@@ -47,6 +47,26 @@ func (e *EVMBackend) processBlock(
 
 	// check txs
 	txs := tendermintblock.Block.Txs
+	/*
+			sorter := make(sortGasAndReward, len(bf.block.Transactions()))
+		for i, tx := range bf.block.Transactions() {
+			reward, _ := tx.EffectiveGasTip(bf.block.BaseFee())
+			sorter[i] = txGasAndReward{gasUsed: bf.receipts[i].GasUsed, reward: reward}
+		}
+		sort.Sort(sorter)
+
+		var txIndex int
+		sumGasUsed := sorter[0].gasUsed
+
+		for i, p := range percentiles {
+			thresholdGasUsed := uint64(float64(bf.block.GasUsed()) * p / 100)
+			for sumGasUsed < thresholdGasUsed && txIndex < len(bf.block.Transactions())-1 {
+				txIndex++
+				sumGasUsed += sorter[txIndex].gasUsed
+			}
+			bf.results.reward[i] = sorter[txIndex].reward
+		}
+	*/
 	for _, txBz := range txs {
 		tx, err := e.clientCtx.TxConfig.TxDecoder()(txBz)
 		if err != nil {
