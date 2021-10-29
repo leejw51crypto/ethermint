@@ -81,6 +81,10 @@ func (e *EVMBackend) processBlock(
 			}
 
 			tx := ethMsg.AsTransaction()
+			// basefee
+			reward := tx.EffectiveGasTipValue(basefee)
+			gasused := ethMsg.GetGas()
+			fmt.Printf("reward %v  gas used %v", reward, gasused)
 
 			hash := tx.Hash()
 			fmt.Printf("tx=%v hash=%v", tx, hash)
