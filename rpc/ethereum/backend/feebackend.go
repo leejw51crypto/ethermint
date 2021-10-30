@@ -12,9 +12,25 @@ import (
 	evmtypes "github.com/tharsis/ethermint/x/evm/types"
 )
 
+type (
+	txGasAndReward struct {
+		gasUsed uint64
+		reward  *big.Int
+	}
+	sortGasAndReward []txGasAndReward
+)
+
+func (s sortGasAndReward) Len() int { return len(s) }
+func (s sortGasAndReward) Swap(i, j int) {
+	s[i], s[j] = s[j], s[i]
+}
+func (s sortGasAndReward) Less(i, j int) bool {
+	return s[i].reward.Cmp(s[j].reward) < 0
+}
+
 func (e *EVMBackend) processBlock(
 	tendermintblock *tmrpctypes.ResultBlock,
-	block *map[string]interface{}, rewardPercentiles []float64, onefeehistory *OneFeeHistory) error {
+	block *map[string]interface{}, rewardPercentiles []float64, blockresult *tmrpctypes.ResultBlockResults, onefeehistory *OneFeeHistory) error {
 
 	height := tendermintblock.Block.Height
 	e.logger.Debug("processBlock #################")
@@ -47,6 +63,9 @@ func (e *EVMBackend) processBlock(
 
 	// check txs
 	txs := tendermintblock.Block.Txs
+	txresults := blockresult.TxsResults
+	txcount := len(txs)
+
 	/*
 			sorter := make(sortGasAndReward, len(bf.block.Transactions()))
 		for i, tx := range bf.block.Transactions() {
@@ -67,13 +86,17 @@ func (e *EVMBackend) processBlock(
 			bf.results.reward[i] = sorter[txIndex].reward
 		}
 	*/
-	for _, txBz := range txs {
+
+	for i := 0; i < txcount; i++ {
+		txBz := txs[i]
+		txresult := txresults[i]
+
 		tx, err := e.clientCtx.TxConfig.TxDecoder()(txBz)
 		if err != nil {
 			e.logger.Debug("failed to decode transaction in block", "height", height, "error", err.Error())
 			continue
 		}
-
+		gasused := txresult.GasUsed
 		for _, msg := range tx.GetMsgs() {
 			ethMsg, ok := msg.(*evmtypes.MsgEthereumTx)
 			if !ok {
@@ -81,14 +104,12 @@ func (e *EVMBackend) processBlock(
 			}
 
 			tx := ethMsg.AsTransaction()
-			// basefee
 			reward := tx.EffectiveGasTipValue(basefee)
-			gasused := ethMsg.GetGas()
 			fmt.Printf("reward %v  gas used %v", reward, gasused)
 
 			hash := tx.Hash()
 			fmt.Printf("tx=%v hash=%v", tx, hash)
-
+			break
 		}
 	}
 
@@ -130,19 +151,27 @@ func (e *EVMBackend) FeeHistory(blockCount rpc.DecimalOrHex, lastBlock rpc.Block
 	// fetch block
 	for blockid := blockstart; blockid < blockend; blockid++ {
 		index := int32(blockid - blockstart)
+		// eth block
 		foundblock, err := e.GetBlockByNumber(rpctypes.BlockNumber(blockid), true)
-
 		if err != nil {
 			return nil, err
 		}
 
+		// tendermint block
 		tendermintblock, tenderminterr := e.GetTendermintBlockByNumber(rpctypes.BlockNumber(blockid))
 		if tenderminterr != nil {
 			return nil, err
 		}
 
+		// block result
+		foundblockresult, err := e.clientCtx.Client.BlockResults(e.ctx, &tendermintblock.Block.Height)
+		if err != nil {
+			e.logger.Debug("EthBlockFromTendermint block result not found", "height", tendermintblock.Block.Height, "error", err.Error())
+			return nil, err
+		}
+
 		var onefeehistory OneFeeHistory = OneFeeHistory{}
-		processerr := e.processBlock(tendermintblock, &foundblock, rewardPercentiles, &onefeehistory)
+		processerr := e.processBlock(tendermintblock, &foundblock, rewardPercentiles, foundblockresult, &onefeehistory)
 		if processerr != nil {
 			return nil, processerr
 		}
