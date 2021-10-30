@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/big"
+	"sort"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/rpc"
@@ -87,6 +88,8 @@ func (e *EVMBackend) processBlock(
 		}
 	*/
 
+	sorter := make(sortGasAndReward, txcount)
+
 	for i := 0; i < txcount; i++ {
 		txBz := txs[i]
 		txresult := txresults[i]
@@ -96,7 +99,7 @@ func (e *EVMBackend) processBlock(
 			e.logger.Debug("failed to decode transaction in block", "height", height, "error", err.Error())
 			continue
 		}
-		gasused := txresult.GasUsed
+		gasused := uint64(txresult.GasUsed)
 		for _, msg := range tx.GetMsgs() {
 			ethMsg, ok := msg.(*evmtypes.MsgEthereumTx)
 			if !ok {
@@ -105,12 +108,25 @@ func (e *EVMBackend) processBlock(
 
 			tx := ethMsg.AsTransaction()
 			reward := tx.EffectiveGasTipValue(basefee)
+			sorter[i] = txGasAndReward{gasUsed: gasused, reward: reward}
 			fmt.Printf("reward %v  gas used %v", reward, gasused)
 
 			hash := tx.Hash()
 			fmt.Printf("tx=%v hash=%v", tx, hash)
 			break
 		}
+	}
+	sort.Sort(sorter)
+
+	var txIndex int
+	sumGasUsed := sorter[0].gasUsed
+	for i, p := range rewardPercentiles {
+		thresholdGasUsed := uint64(float64(gasUsed) * p / 100)
+		for sumGasUsed < thresholdGasUsed && txIndex < txcount-1 {
+			txIndex++
+			sumGasUsed += sorter[txIndex].gasUsed
+		}
+		onefeehistory.Reward[i] = sorter[txIndex].reward
 	}
 
 	return nil
