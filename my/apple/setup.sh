@@ -36,7 +36,7 @@ $CLI keys list --keyring-backend $KEYRING --home $CHAINHOME
 #echo 'HOME='$CHAINHOME
 
 export TOTALAMOUNT=100000000000000000000000000000000$DENOM
-export MYAMOUNT=1000100000000000000001$DENOM
+export MYAMOUNT=1000000100000000000000001$DENOM
 
 export K1=$($CLI keys list --keyring-backend $KEYRING --home $CHAINHOME | yq eval  -o json | jq '.[0].address' |  tr -d '"')
 export S1=$($CLI keys list --keyring-backend $KEYRING --home $CHAINHOME | yq eval  -o json | jq '.[1].address' |  tr -d '"')
