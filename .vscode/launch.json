@@ -1,0 +1,39 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Launch Package",
+      "type": "go",
+      "request": "launch",
+      "mode": "auto",
+      "program": "${workspaceFolder}/cmd/ethermintd",
+      "env": {
+        "KEY": "mykey",
+        "CHAINID": "ethermint-2",
+        "MONIKER": "localtestnet",
+        "KEYRING": "test",
+        "KEYALGO": "eth_secp256k1",
+        "LOGLEVEL": "fatal",
+        "TRACE": ""
+      },
+      "args": [
+        "start",
+        "--log_level",
+        "debug",
+        "--trace",
+        "--json-rpc.api",
+        "eth,txpool,personal,net,debug,web3,miner",
+        "--home",
+        "$HOME/.applemint_9000-2"
+      ]
+    },
+
+    {
+      "name": "Launch Package2",
+      "type": "go",
+      "request": "launch",
+      "mode": "auto",
+      "program": "${fileDirname}"
+    }
+  ]
+}
