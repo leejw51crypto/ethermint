@@ -35,7 +35,7 @@ func (e *EVMBackend) processBlock(
 
 	height := tendermintblock.Block.Height
 	e.logger.Debug("processBlock #################")
-	e.logger.Debug("height ", height, "   ###################")
+	e.logger.Debug("height {} #########", height)
 	json, jsonerr := json.Marshal(block)
 	if jsonerr != nil {
 		return jsonerr
@@ -50,8 +50,13 @@ func (e *EVMBackend) processBlock(
 	onefeehistory.BaseFee = basefee
 
 	// set gasused ratio
-	gasLimit := (*block)["gasLimit"].(int64)
-	gasUsed := (*block)["gasUsed"].(int64)
+	gasLimit2 := (*block)["gasLimit"].(hexutil.Uint64)
+	gasUsed2 := (*block)["gasUsed"].(*hexutil.Big)
+	e.logger.Debug("gasLimit {}", gasLimit2)
+	e.logger.Debug("gasUsed {}", gasUsed2)
+
+	gasLimit := gasLimit2
+	gasUsed := 1
 	gasusedratio := float64(gasUsed) / float64(gasLimit)
 
 	onefeehistory.GasUsed = gasusedratio
