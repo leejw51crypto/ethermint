@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math/big"
 	"sort"
+	"strconv"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/rpc"
@@ -50,14 +51,18 @@ func (e *EVMBackend) processBlock(
 	onefeehistory.BaseFee = basefee
 
 	// set gasused ratio
-	gasLimit2 := (*block)["gasLimit"].(hexutil.Uint64)
-	gasUsed2 := (*block)["gasUsed"].(*hexutil.Big)
+	var gasLimit2 = (*block)["gasLimit"].(hexutil.Uint64)
+	var gasUsed4 = (*block)["gasUsed"].(*hexutil.Big)
+	var gasUsed3 = gasUsed4.ToInt().String()
+	e.logger.Debug("gasUsed3 {}", gasUsed3)
+	gasUsed2, _ := strconv.ParseFloat(gasUsed3, 64)
 	e.logger.Debug("gasLimit {}", gasLimit2)
 	e.logger.Debug("gasUsed {}", gasUsed2)
-
-	gasLimit := gasLimit2
-	gasUsed := 1
-	gasusedratio := float64(gasUsed) / float64(gasLimit)
+	var gasusedratio float64 = 0
+	if gasLimit2 > 0 {
+		gasusedratio = float64(gasUsed2) / float64(gasLimit2)
+	}
+	var blockgasused = gasUsed2
 
 	onefeehistory.GasUsed = gasusedratio
 
@@ -126,7 +131,7 @@ func (e *EVMBackend) processBlock(
 	var txIndex int
 	sumGasUsed := sorter[0].gasUsed
 	for i, p := range rewardPercentiles {
-		thresholdGasUsed := uint64(float64(gasUsed) * p / 100)
+		thresholdGasUsed := uint64(float64(blockgasused) * p / 100)
 		for sumGasUsed < thresholdGasUsed && txIndex < txcount-1 {
 			txIndex++
 			sumGasUsed += sorter[txIndex].gasUsed
