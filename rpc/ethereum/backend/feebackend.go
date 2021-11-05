@@ -128,6 +128,12 @@ func (e *EVMBackend) processBlock(
 	}
 	sort.Sort(sorter)
 
+	// print
+	for index, element := range sorter {
+		a := fmt.Sprintf("index= %d  gasused= %v   reward= %v", index, element.gasUsed, element.reward)
+		e.logger.Debug(a)
+	}
+
 	var txIndex int
 	sumGasUsed := sorter[0].gasUsed
 	for i, p := range rewardPercentiles {
