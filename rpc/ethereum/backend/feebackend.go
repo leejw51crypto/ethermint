@@ -139,11 +139,20 @@ func (e *EVMBackend) processBlock(
 	for i, p := range rewardPercentiles {
 		thresholdGasUsed := uint64(float64(blockgasused) * p / 100)
 		for sumGasUsed < thresholdGasUsed && txIndex < txcount-1 {
+			// b := fmt.Sprintf("index %d  txindex %d  percent %f  thresholdGasUsed %d sumGasUsed %d", i, txIndex, p, thresholdGasUsed, sumGasUsed)
+			// e.logger.Debug(b)
 			txIndex++
 			sumGasUsed += sorter[txIndex].gasUsed
 		}
+		b := fmt.Sprintf("index %d    percent %f  thresholdGasUsed %d sumGasUsed %d", i, p, thresholdGasUsed, sumGasUsed)
+		e.logger.Debug(b)
+
 		onefeehistory.Reward[i] = sorter[txIndex].reward
 	}
+
+	e.logger.Debug(fmt.Sprintf("gasLimit %d", gasLimit2))
+	e.logger.Debug(fmt.Sprintf("gasUsed %f ", gasUsed2))
+	e.logger.Debug(fmt.Sprintf("sumGasUsed %d ", sumGasUsed))
 
 	return nil
 }
