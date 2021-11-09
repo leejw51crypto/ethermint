@@ -1,7 +1,6 @@
 package backend
 
 import (
-	"encoding/json"
 	"fmt"
 	"math/big"
 	"sort"
@@ -37,11 +36,11 @@ func (e *EVMBackend) processBlock(
 	height := tendermintblock.Block.Height
 	e.logger.Debug("processBlock #################")
 	e.logger.Debug("height {} #########", height)
-	json, jsonerr := json.Marshal(block)
-	if jsonerr != nil {
-		return jsonerr
-	}
-	e.logger.Debug(string(json))
+	//json, jsonerr := json.Marshal(block)
+	//	if jsonerr != nil {
+	//return jsonerr
+	//}
+	//e.logger.Debug(string(json))
 	basefee, err := e.BaseFee(height)
 	if err != nil {
 		return err
@@ -54,14 +53,17 @@ func (e *EVMBackend) processBlock(
 	var gasLimit2 = (*block)["gasLimit"].(hexutil.Uint64)
 	var gasUsed4 = (*block)["gasUsed"].(*hexutil.Big)
 	var gasUsed3 = gasUsed4.ToInt().String()
-	e.logger.Debug("gasUsed3 {}", gasUsed3)
+	//e.logger.Debug("gasUsed3 {}", gasUsed3)
 	gasUsed2, _ := strconv.ParseFloat(gasUsed3, 64)
-	e.logger.Debug("gasLimit {}", gasLimit2)
-	e.logger.Debug("gasUsed {}", gasUsed2)
+	//e.logger.Debug("gasLimit {}", gasLimit2)
+	//e.logger.Debug("gasUsed {}", gasUsed2)
 	var gasusedratio float64 = 0
 	if gasLimit2 > 0 {
 		gasusedratio = float64(gasUsed2) / float64(gasLimit2)
 	}
+	d1 := fmt.Sprintf("ratio= %f  gasused= %f   gaslimit= %f", gasusedratio, float64(gasUsed2), float64(gasLimit2))
+	e.logger.Debug(d1)
+
 	var blockgasused = gasUsed2
 
 	onefeehistory.GasUsed = gasusedratio
@@ -76,28 +78,6 @@ func (e *EVMBackend) processBlock(
 	txs := tendermintblock.Block.Txs
 	txresults := blockresult.TxsResults
 	txcount := len(txs)
-
-	/*
-			sorter := make(sortGasAndReward, len(bf.block.Transactions()))
-		for i, tx := range bf.block.Transactions() {
-			reward, _ := tx.EffectiveGasTip(bf.block.BaseFee())
-			sorter[i] = txGasAndReward{gasUsed: bf.receipts[i].GasUsed, reward: reward}
-		}
-		sort.Sort(sorter)
-
-		var txIndex int
-		sumGasUsed := sorter[0].gasUsed
-
-		for i, p := range percentiles {
-			thresholdGasUsed := uint64(float64(bf.block.GasUsed()) * p / 100)
-			for sumGasUsed < thresholdGasUsed && txIndex < len(bf.block.Transactions())-1 {
-				txIndex++
-				sumGasUsed += sorter[txIndex].gasUsed
-			}
-			bf.results.reward[i] = sorter[txIndex].reward
-		}
-	*/
-
 	sorter := make(sortGasAndReward, txcount)
 
 	for i := 0; i < txcount; i++ {
@@ -115,7 +95,6 @@ func (e *EVMBackend) processBlock(
 			if !ok {
 				continue
 			}
-
 			tx := ethMsg.AsTransaction()
 			reward := tx.EffectiveGasTipValue(basefee)
 			sorter[i] = txGasAndReward{gasUsed: gasused, reward: reward}
