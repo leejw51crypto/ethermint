@@ -135,7 +135,10 @@ func (e *EVMBackend) processBlock(
 	}
 
 	var txIndex int
-	sumGasUsed := sorter[0].gasUsed
+	sumGasUsed := uint64(0)
+	if len(sorter) > 0 {
+		sumGasUsed = sorter[0].gasUsed
+	}
 	for i, p := range rewardPercentiles {
 		thresholdGasUsed := uint64(float64(blockgasused) * p / 100)
 		for sumGasUsed < thresholdGasUsed && txIndex < txcount-1 {
@@ -147,9 +150,11 @@ func (e *EVMBackend) processBlock(
 		b := fmt.Sprintf("index %d    percent %f  thresholdGasUsed %d sumGasUsed %d", i, p, thresholdGasUsed, sumGasUsed)
 		e.logger.Debug(b)
 
-		chosenreward := sorter[txIndex].reward
-		e.logger.Debug(fmt.Sprintf("chosen txindex %d  reward %s", txIndex, chosenreward))
-
+		chosenreward := big.NewInt(0)
+		if 0 <= txIndex && txIndex < len(sorter) {
+			chosenreward = sorter[txIndex].reward
+			e.logger.Debug(fmt.Sprintf("chosen txindex %d  reward %s", txIndex, chosenreward))
+		}
 		onefeehistory.Reward[i] = chosenreward
 	}
 
@@ -166,8 +171,8 @@ type OneFeeHistory struct {
 	GasUsed float64
 }
 
-func (e *EVMBackend) FeeHistory(blockCount rpc.DecimalOrHex, lastBlock rpc.BlockNumber, rewardPercentiles []float64) (*rpctypes.FeeHistoryResult, error) {
-	e.logger.Debug("eth_feeHistory count {}   ", blockCount)
+func (e *EVMBackend) FeeHistory(userblockCount rpc.DecimalOrHex, lastBlock rpc.BlockNumber, rewardPercentiles []float64) (*rpctypes.FeeHistoryResult, error) {
+	e.logger.Debug("eth_feeHistory count {}   ", userblockCount)
 
 	var blockend int64 = int64(lastBlock)
 
@@ -178,7 +183,11 @@ func (e *EVMBackend) FeeHistory(blockCount rpc.DecimalOrHex, lastBlock rpc.Block
 		}
 		blockend = int64(blockNumber)
 	}
-	var blockstart int64 = blockend - int64(blockCount)
+	var blockstart int64 = blockend - int64(userblockCount)
+	if blockstart < 0 {
+		blockstart = 0
+	}
+
 	var blockcount int64 = blockend - blockstart
 
 	var OldestBlock *hexutil.Big = (*hexutil.Big)(big.NewInt(blockstart))
@@ -186,7 +195,7 @@ func (e *EVMBackend) FeeHistory(blockCount rpc.DecimalOrHex, lastBlock rpc.Block
 	// prepare space
 	var Reward [][]*hexutil.Big = make([][]*hexutil.Big, blockcount)
 	var rewardcount = len(rewardPercentiles)
-	for i := 0; i < int(blockCount); i++ {
+	for i := 0; i < int(blockcount); i++ {
 		Reward[i] = make([]*hexutil.Big, rewardcount)
 	}
 	var BaseFee []*hexutil.Big = make([]*hexutil.Big, blockcount)
