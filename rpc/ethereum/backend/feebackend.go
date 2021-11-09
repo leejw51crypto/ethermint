@@ -1,7 +1,6 @@
 package backend
 
 import (
-	"fmt"
 	"math/big"
 	"sort"
 	"strconv"
@@ -34,13 +33,6 @@ func (e *EVMBackend) processBlock(
 	block *map[string]interface{}, rewardPercentiles []float64, blockresult *tmrpctypes.ResultBlockResults, onefeehistory *OneFeeHistory) error {
 
 	height := tendermintblock.Block.Height
-	e.logger.Debug("processBlock #################")
-	e.logger.Debug("height {} #########", height)
-	//json, jsonerr := json.Marshal(block)
-	//	if jsonerr != nil {
-	//return jsonerr
-	//}
-	//e.logger.Debug(string(json))
 	basefee, err := e.BaseFee(height)
 	if err != nil {
 		return err
@@ -53,16 +45,11 @@ func (e *EVMBackend) processBlock(
 	var gasLimit2 = (*block)["gasLimit"].(hexutil.Uint64)
 	var gasUsed4 = (*block)["gasUsed"].(*hexutil.Big)
 	var gasUsed3 = gasUsed4.ToInt().String()
-	//e.logger.Debug("gasUsed3 {}", gasUsed3)
 	gasUsed2, _ := strconv.ParseFloat(gasUsed3, 64)
-	//e.logger.Debug("gasLimit {}", gasLimit2)
-	//e.logger.Debug("gasUsed {}", gasUsed2)
 	var gasusedratio float64 = 0
 	if gasLimit2 > 0 {
 		gasusedratio = float64(gasUsed2) / float64(gasLimit2)
 	}
-	d1 := fmt.Sprintf("ratio= %f  gasused= %f   gaslimit= %f", gasusedratio, float64(gasUsed2), float64(gasLimit2))
-	e.logger.Debug(d1)
 
 	var blockgasused = gasUsed2
 
@@ -98,20 +85,10 @@ func (e *EVMBackend) processBlock(
 			tx := ethMsg.AsTransaction()
 			reward := tx.EffectiveGasTipValue(basefee)
 			sorter[i] = txGasAndReward{gasUsed: gasused, reward: reward}
-			fmt.Printf("reward %v  gas used %v", reward, gasused)
-
-			hash := tx.Hash()
-			fmt.Printf("tx=%v hash=%v", tx, hash)
 			break
 		}
 	}
 	sort.Sort(sorter)
-
-	// print
-	for index, element := range sorter {
-		a := fmt.Sprintf("index= %d  gasused= %v   reward= %v", index, element.gasUsed, element.reward)
-		e.logger.Debug(a)
-	}
 
 	var txIndex int
 	sumGasUsed := uint64(0)
@@ -121,25 +98,16 @@ func (e *EVMBackend) processBlock(
 	for i, p := range rewardPercentiles {
 		thresholdGasUsed := uint64(float64(blockgasused) * p / 100)
 		for sumGasUsed < thresholdGasUsed && txIndex < txcount-1 {
-			b := fmt.Sprintf("index %d  txindex %d  percent %f  thresholdGasUsed %d sumGasUsed %d", i, txIndex, p, thresholdGasUsed, sumGasUsed)
-			e.logger.Debug(b)
 			txIndex++
 			sumGasUsed += sorter[txIndex].gasUsed
 		}
-		b := fmt.Sprintf("index %d    percent %f  thresholdGasUsed %d sumGasUsed %d", i, p, thresholdGasUsed, sumGasUsed)
-		e.logger.Debug(b)
 
 		chosenreward := big.NewInt(0)
 		if 0 <= txIndex && txIndex < len(sorter) {
 			chosenreward = sorter[txIndex].reward
-			e.logger.Debug(fmt.Sprintf("chosen txindex %d  reward %s", txIndex, chosenreward))
 		}
 		onefeehistory.Reward[i] = chosenreward
 	}
-
-	e.logger.Debug(fmt.Sprintf("######## gasLimit %d", gasLimit2))
-	e.logger.Debug(fmt.Sprintf("######## gasUsed %f ", gasUsed2))
-	e.logger.Debug(fmt.Sprintf("######## sumGasUsed %d ", sumGasUsed))
 
 	return nil
 }
@@ -151,7 +119,6 @@ type OneFeeHistory struct {
 }
 
 func (e *EVMBackend) FeeHistory(userblockCount rpc.DecimalOrHex, lastBlock rpc.BlockNumber, rewardPercentiles []float64) (*rpctypes.FeeHistoryResult, error) {
-	e.logger.Debug("eth_feeHistory count {}   ", userblockCount)
 
 	var blockend int64 = int64(lastBlock)
 
