@@ -1,6 +1,7 @@
 package server
 
 import (
+	"net"
 	"net/http"
 	"time"
 
@@ -75,6 +76,7 @@ func StartJSONRPC(ctx *server.Context,
 		WriteTimeout:      config.JSONRPC.HTTPTimeout,
 		IdleTimeout:       config.JSONRPC.HTTPIdleTimeout,
 	}
+	httpSrv.SetKeepAlivesEnabled(false)
 	httpSrvDone := make(chan struct{}, 1)
 
 	ln, err := Listen(httpSrv.Addr, config)
