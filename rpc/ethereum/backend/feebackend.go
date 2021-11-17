@@ -128,7 +128,7 @@ func (e *EVMBackend) FeeHistory(userBlockCount rpc.DecimalOrHex, /* number block
 		blockEnd = int64(blockNumber)
 	}
 	userBlockCountInt := int64(userBlockCount)
-	const maxBlockCount = 100
+	maxBlockCount := int64(e.cfg.JSONRPC.FeeHistoryCap)
 	if userBlockCountInt > maxBlockCount {
 		return nil, fmt.Errorf("FeeHistory user block count %d higher than %d", userBlockCountInt, maxBlockCount)
 	}
@@ -155,19 +155,19 @@ func (e *EVMBackend) FeeHistory(userBlockCount rpc.DecimalOrHex, /* number block
 		index := int32(blockID - blockStart)
 		// eth block
 		ethBlock, err := e.GetBlockByNumber(rpctypes.BlockNumber(blockID), true)
-		if err != nil {
+		if ethBlock == nil {
 			return nil, err
 		}
 
 		// tendermint block
 		tendermintblock, err := e.GetTendermintBlockByNumber(rpctypes.BlockNumber(blockID))
-		if err != nil {
+		if tendermintblock == nil {
 			return nil, err
 		}
 
 		// tendermint block result
 		tendermintBlockResult, err := e.clientCtx.Client.BlockResults(e.ctx, &tendermintblock.Block.Height)
-		if err != nil {
+		if tendermintBlockResult == nil {
 			e.logger.Debug("block result not found", "height", tendermintblock.Block.Height, "error", err.Error())
 			return nil, err
 		}

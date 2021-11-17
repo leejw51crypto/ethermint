@@ -892,6 +892,11 @@ func (e *EVMBackend) RPCFilterCap() int32 {
 	return e.cfg.JSONRPC.FilterCap
 }
 
+// RPCFeeHistoryCap is the limit for total number of blocks that can be fetched
+func (e *EVMBackend) RPCFeeHistgoryCap() int32 {
+	return e.cfg.JSONRPC.FeeHistoryCap
+}
+
 // RPCMinGasPrice returns the minimum gas price for a transaction obtained from
 // the node config. If set value is 0, it will default to 20.
 
