@@ -139,7 +139,7 @@ func (e *EVMBackend) FeeHistory(userBlockCount rpc.DecimalOrHex, /* number block
 
 	blockCount := blockEnd - blockStart
 
-	OldestBlock := (*hexutil.Big)(big.NewInt(blockStart))
+	oldestBlock := (*hexutil.Big)(big.NewInt(blockStart))
 
 	// prepare space
 	reward := make([][]*hexutil.Big, blockCount)
