@@ -145,7 +145,7 @@ func (e *EVMBackend) FeeHistory(userBlockCount rpc.DecimalOrHex, /* number block
 	reward := make([][]*hexutil.Big, blockCount)
 	rewardcount := len(rewardPercentiles)
 	for i := 0; i < int(blockCount); i++ {
-		Reward[i] = make([]*hexutil.Big, rewardcount)
+		reward[i] = make([]*hexutil.Big, rewardcount)
 	}
 	thisBaseFee := make([]*hexutil.Big, blockCount)
 	thisGasUsedRatio := make([]float64, blockCount)
@@ -182,14 +182,14 @@ func (e *EVMBackend) FeeHistory(userBlockCount rpc.DecimalOrHex, /* number block
 		thisBaseFee[index] = (*hexutil.Big)(onefeehistory.BaseFee)
 		thisGasUsedRatio[index] = onefeehistory.GasUsedRatio
 		for j := 0; j < rewardcount; j++ {
-			Reward[index][j] = (*hexutil.Big)(onefeehistory.Reward[j])
+			reward[index][j] = (*hexutil.Big)(onefeehistory.Reward[j])
 		}
 
 	}
 
 	feeHistory := rpctypes.FeeHistoryResult{
-		OldestBlock:  OldestBlock,
-		Reward:       Reward,
+		OldestBlock:  oldestBlock,
+		Reward:       reward,
 		BaseFee:      thisBaseFee,
 		GasUsedRatio: thisGasUsedRatio,
 	}
